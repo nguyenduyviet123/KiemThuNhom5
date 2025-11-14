@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Khách hàng{% endblock %}
+{% block content %}
+  <div class="header">Quản lý Khách hàng</div>
+  <div class="action-bar">
+    <a href="{{ url_for('khachhang_add') }}"><button class="add-btn">+ Thêm khách hàng</button></a>
+  </div>
+  <table>
+    <tr>
+      <th>Mã KH</th><th>Tên KH</th><th>Địa chỉ</th><th>SĐT</th><th>Hành động</th>
+    </tr>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.MaKH }}</td>
+      <td>{{ it.TenKH }}</td>
+      <td>{{ it.DiaChi }}</td>
+      <td>{{ it.SDT }}</td>
+      <td>
+        <form style="display:inline" method="post" action="{{ url_for('khachhang_delete', ma=it.MaKH) }}">
+          <button class="delete-btn" type="submit" onclick="return confirm('Xóa khách hàng này?')">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

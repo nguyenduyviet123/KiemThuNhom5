@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Chi tiết sản phẩm{% endblock %}
+
+{% block content %}
+<div class="header">🔍 Chi tiết sản phẩm</div>
+
+<div class="product-detail">
+  <img src="{{ p.Anh or url_for('static', filename='img/noimage.png') }}" alt="{{ p.TenSP_ }}">
+  <div class="detail-info">
+    <h2>{{ p.TenSP_ }}</h2>
+    <p><b>Mã sản phẩm:</b> {{ p.MaSP }}</p>
+    <p><b>Loại sản phẩm:</b> {{ p.TenLoai or p.MaLoai }}</p>
+    <p><b>Giá mới:</b> <span class="new-price">{{ "{:,.0f}".format(p.DonGia or 0) }} đ</span>
+    <p><b>Giá cũ:</b> <span class="old-price">{{ "{:,.0f}".format(p.GiaCu or 0) }} đ</span>
+    <p><b>Mô tả:</b></p>
+    <p class="desc">{{ p.MoTa or 'Chưa có mô tả chi tiết.' }}</p>
+
+    <div class="back-btn-container">
+      <a href="{{ url_for('sanpham_list') }}" class="back-btn">⬅ Quay lại</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

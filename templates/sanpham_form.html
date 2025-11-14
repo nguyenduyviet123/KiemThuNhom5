@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="header">{{ 'Sửa' if item else 'Thêm' }} Sản phẩm</div>
+  <form method="post">
+    <label>Mã sản phẩm</label><br>
+    <input name="MaSP" value="{{ item.MaSP if item }}" {% if item %} readonly {% endif %} required><br>
+
+    <label>Tên</label><br>
+    <input name="TenSP_" value="{{ item.TenSP_ if item }}" required><br>
+
+    <label>Giá</label><br>
+    <input name="DonGia" value="{{ item.DonGia if item }}"><br>
+
+    <label>Giá cũ</label><br>
+    <input name="GiaCu" value="{{ item.GiaCu if item }}"><br>
+
+    <label>Mô tả</label><br>
+    <textarea name="MoTa">{{ item.MoTa if item }}</textarea><br>
+
+    <label>Ảnh (URL)</label><br>
+    <input name="Anh" value="{{ item.Anh if item }}"><br>
+
+    <label>Loại</label><br>
+    <select name="MaLoai">
+      {% for l in loai %}
+        <option value="{{ l.MaLoai }}" {% if item and item.MaLoai==l.MaLoai %}selected{% endif %}>{{ l.TenLoai }}</option>
+      {% endfor %}
+    </select><br><br>
+
+    <button type="submit" class="add-btn">Lưu</button>
+  </form>
+{% endblock %}

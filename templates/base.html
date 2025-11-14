@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Tìm kiếm sp -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2><a href="{{ url_for('home') }}" style="text-decoration:none;color:white;">🍰 Admin Panel</a></h2>
+        <a href="{{ url_for('index') }}" class="menu-item {% if active=='dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('loaisp_list') }}" class="menu-item {% if active=='loaisp' %}active{% endif %}">Loại sản phẩm</a>
+        <a href="{{ url_for('sanpham_list') }}" class="menu-item {% if active=='sanpham' %}active{% endif %}">Sản phẩm</a>
+        <a href="{{ url_for('taikhoan_list') }}" class="menu-item {% if active=='taikhoan' %}active{% endif %}">Tài khoản</a>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flash-container">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<style>
+  /* Vị trí container */
+  #flash-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+  }
+
+  /* Giao diện chung */
+  .flash {
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    color: white;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    font-size: 15px;
+    animation: fadeInOut 3s ease-in-out;
+  }
+
+  /* Màu cho từng loại */
+  .flash.success { background-color: #71b480; }
+  .flash.error { background-color: #dc3545; }
+  .flash.warning { background-color: #ffc107; color: #ececec; }
+
+  /* Hiệu ứng hiện – ẩn mượt */
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+</style>
+
+<script>
+  // Tự động ẩn sau 3 giây
+  setTimeout(() => {
+    const container = document.getElementById('flash-container');
+    if (container) container.style.display = 'none';
+  }, 3000);
+</script>
+
+
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NHÓM 5 KTPM Bakery</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/demo.css') }}">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+          <a href="{{ url_for('home') }}">
+      <img src="https://cdn-icons-png.flaticon.com/512/858/858170.png" alt="Logo SweetHome">
+    </a>
+      <h1>🍰 NHÓM 5 KTPM Bakery 🍰</h1>
+    </div>
+  </header>
+
+  <!-- THANH TÌM KIẾM / TÀI KHOẢN / GIỎ HÀNG -->
+  <div class="top-bar">
+    <input type="text" placeholder="🔍 Tìm kiếm sản phẩm..." class="search-box">
+    <div class="actions">
+      <a href="{{ url_for('dangnhap') }}">👤 Tài khoản</a>
+      <a href="{{ url_for('giohang') }}">🛒 Giỏ hàng</a>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <nav class="menu">
+    {% for loai in categories %}
+      <a href="{{ url_for('home_loai', ma_loai=loai[0]) }}"
+         class="{% if ma_loai_hien_tai == loai[0] %}active{% endif %}">
+         {{ loai[1] }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  <!-- DANH SÁCH SẢN PHẨM -->
+  <main class="product-grid">
+    {% for sp in products %}
+    <div class="product">
+      <a href="{{ url_for('chitiet', ma_sp=sp[0]) }}">
+        <img src="{{ sp[3] }}" alt="{{ sp[1] }}">
+      </a>
+      <h3><a href="{{ url_for('chitiet', ma_sp=sp[0]) }}">{{ sp[1] }}</a></h3>
+      <p>{{ '{:,.0f}'.format(sp[2]) }}đ</p>
+      <a href="{{ url_for('add_to_cart', ma_sp=sp[0]) }}">🛒 Thêm vào giỏ</a>
+    </div>
+    {% endfor %}
+  </main>
+
+</body>
+</html>

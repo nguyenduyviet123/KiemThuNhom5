@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập - Tiệm Bánh SweetHome</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fffaf5;
+      color: #333;
+    }
+
+    /* ✅ Header */
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffcc99;
+      padding: 20px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .header .logo {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .header .logo img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+    .header .logo h1 {
+      font-size: 32px;
+      color: #663300;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 3px rgba(255,255,255,0.4);
+    }
+
+    /* ✅ Container form */
+    .container {
+      max-width: 420px;
+      margin: 60px auto;
+      background-color: #fff;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 30px 35px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #d24a6c;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      font-size: 15px;
+    }
+
+    .pw-field { position: relative; }
+
+    .pw-toggle {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      border: none;
+      background: none;
+      color: #d24a6c;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .error {
+      color: red;
+      font-size: 13px;
+      margin-top: -12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .btn {
+      width: 100%;
+      background-color: #ff7a8a;
+      border: none;
+      color: #fff;
+      padding: 12px;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover { background-color: #e36476; }
+
+    .text-center { text-align: center; margin-top: 15px; font-size: 14px; }
+
+    .text-center a {
+      color: #d24a6c;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .text-center a:hover { text-decoration: underline; }
+
+    .hidden { display: none; }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #777;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ Header -->
+  <header class="header">
+    <div class="logo">
+      <a href="{{ url_for('home') }}">
+        <img src="https://cdn-icons-png.flaticon.com/512/858/858170.png" alt="Logo SweetHome">
+      </a>
+      <h1>🍰 Tiệm Bánh SweetHome 🍰</h1>
+    </div>
+  </header>
+
+  <div class="container">
+    <h2 id="formTitle">Đăng nhập tài khoản</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="text-align:center; color:red; margin-bottom:10px;">
+          {% for category, message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <p id="formSubtitle" class="subtitle">Đăng nhập để đặt bánh, quản lý đơn hàng và nhận ưu đãi.</p>
+
+    <!-- ✅ Form đăng nhập -->
+   <form id="loginForm" method="POST" action="{{ url_for('dangnhap') }}">
+      <label for="loginUsername">Tên đăng nhập</label>
+      <input type="text" id="loginUsername" name="username" placeholder="Nhập tên đăng nhập" required>
+
+      <label for="loginPassword">Mật khẩu</label>
+      <div class="pw-field">
+        <input type="password" id="loginPassword" name="password" placeholder="Nhập mật khẩu" required>
+        <button type="button" class="pw-toggle" data-target="loginPassword">Hiện</button>
+      </div>
+
+      <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+        <a href="#" style="color: #d24a6c; font-weight: 600; text-decoration: none; font-size: 14px;">Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn">Đăng nhập</button>
+
+      <div class="text-center">
+        <p>Chưa có tài khoản? <a href="#" id="toRegister">Đăng ký ngay</a></p>
+      </div>
+    </form>
+
+    <!-- ✅ Form đăng ký -->
+    <form id="registerForm" class="hidden">
+      <label for="username">Tên đăng nhập</label>
+      <input type="text" id="username" placeholder="Tối thiểu 4 ký tự" required>
+      <span id="err-username" class="error">Tên đăng nhập quá ngắn</span>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Nhập email hợp lệ" required>
+      <span id="err-email" class="error">Email không hợp lệ</span>
+
+      <label for="password">Mật khẩu</label>
+      <div class="pw-field">
+        <input type="password" id="password" placeholder="Ít nhất 6 ký tự" required>
+        <button type="button" class="pw-toggle" data-target="password">Hiện</button>
+      </div>
+      <span id="err-password" class="error">Mật khẩu quá ngắn</span>
+
+      <label for="confirm">Nhập lại mật khẩu</label>
+      <div class="pw-field">
+        <input type="password" id="confirm" placeholder="Nhập lại mật khẩu" required>
+        <button type="button" class="pw-toggle" data-target="confirm">Hiện</button>
+      </div>
+      <span id="err-confirm" class="error">Mật khẩu không trùng khớp</span>
+
+      <button type="submit" class="btn">Đăng ký</button>
+      <button type="button" id="cancelBtn" class="btn" style="background-color: #ccc; color: #333; margin-top:10px;">Hủy</button>
+
+      <div class="text-center" style="margin-top:10px;">
+        <a href="#" id="backToLogin">← Quay lại đăng nhập</a>
+      </div>
+    </form>
+  </div>
+
+  <footer>
+    <p>© 2025 SweetHome Bakery</p>
+  </footer>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const title = document.getElementById('formTitle');
+    const subtitle = document.getElementById('formSubtitle');
+
+    document.querySelectorAll('.pw-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        if (target.type === 'password') {
+          target.type = 'text';
+          btn.textContent = 'Ẩn';
+        } else {
+          target.type = 'password';
+          btn.textContent = 'Hiện';
+        }
+      });
+    });
+
+    document.getElementById('toRegister').addEventListener('click', () => {
+      loginForm.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+      title.textContent = 'Đăng ký tài khoản';
+      subtitle.textContent = 'Tạo tài khoản để đặt bánh, quản lý đơn hàng và nhận ưu đãi.';
+    });
+
+    document.getElementById('backToLogin').addEventListener('click', () => {
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+      title.textContent = 'Đăng nhập tài khoản';
+      subtitle.textContent = 'Đăng nhập để đặt bánh, quản lý đơn hàng và nhận ưu đãi.';
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn hủy đăng ký?')) {
+        registerForm.reset();
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        title.textContent = 'Đăng nhập tài khoản';
+        subtitle.textContent = 'Đăng nhập để đặt bánh, quản lý đơn hàng và nhận ưu đãi.';
+      }
+    });
+
+    registerForm.addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Đăng ký thành công');
+      registerForm.reset();
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+      title.textContent = 'Đăng nhập tài khoản';
+      subtitle.textContent = 'Đăng nhập để đặt bánh, quản lý đơn hàng và nhận ưu đãi.';
+    });
+
+  </script>
+</body>
+</html>

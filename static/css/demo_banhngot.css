@@ -1,0 +1,129 @@
+/* ===== TOÀN TRANG ===== */
+body {
+  font-family: "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #fffaf5;
+  color: #333;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background-color: #ffcc99;
+  display: flex;
+  justify-content: space-between; /* logo trái, menu phải */
+  align-items: center;
+  padding: 10px 40px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header .logo img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+}
+
+.header .logo h1 {
+  font-size: 26px;
+  color: #663300;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(255,255,255,0.4);
+}
+
+/* ===== MENU ===== */
+a {
+  text-decoration: none;
+}
+.menu a {
+  text-decoration: none;
+  color: white;
+  background-color: #ffb366;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 10px;
+  transition: background 0.3s, color 0.3s;
+}
+
+.menu a:hover {
+  background-color: #ffe5cc;
+  color: #663300;
+}
+
+.menu a.active {
+  background-color: #ff9966;
+}
+
+/* ===== LƯỚI SẢN PHẨM ===== */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* ✅ Cố định 6 cột */
+  gap: 25px;
+  padding: 40px 60px;
+  justify-items: center;
+}
+
+.product {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  width: 180px;
+  text-align: center;
+  padding-bottom: 10px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.product img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.product h3 {
+  margin: 10px 0 5px;
+  font-size: 15px;
+  color: #663300;
+}
+
+.product p {
+  color: #ff6600;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.product a {
+  display: inline-block;
+  background-color: #ff9966;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.product a:hover {
+  background-color: #e07b4f;
+}
+
+/* ===== FOOTER ===== */
+footer {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+}

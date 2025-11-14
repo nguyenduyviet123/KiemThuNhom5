@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="header">Thêm Tài khoản</div>
+  <form method="post">
+    <h3>Thông tin tài khoản</h3>
+    <label>MaTK</label><br>
+    <input name="MaTK"><br>
+    
+    <label>Tên đăng nhập</label><br>
+    <input name="TenDangNhap"><br>
+    
+    <label>Mật khẩu</label><br>
+    <input name="MatKhau"><br>
+    
+    <label>Email</label><br>
+    <input name="Email"><br>
+    
+    <label>Vai trò</label><br>
+    <input name="VaiTro" placeholder="Admin / Khach"><br><br>
+
+    <h3>Thông tin khách hàng</h3>
+    <label>Họ tên</label><br>
+    <input name="HoTen" placeholder="Nhập họ tên khách"><br>
+    
+    <label>Địa chỉ</label><br>
+    <input name="DiaChi" placeholder="Nhập địa chỉ"><br>
+    
+    <label>Số điện thoại</label><br>
+    <input name="SoDT" placeholder="Nhập số điện thoại"><br><br>
+    
+    <button class="add-btn" type="submit">Lưu</button>
+  </form>
+{% endblock %}

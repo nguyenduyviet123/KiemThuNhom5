@@ -1,0 +1,146 @@
+    /* Tổng thể */
+    body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #fffaf5;
+    color: #333;
+    }
+
+    /* Header */
+    /* ===== HEADER ===== */
+    .header {
+    display: flex;
+    justify-content: center; /* Căn giữa toàn bộ logo + chữ */
+    align-items: center;     /* Căn giữa theo chiều dọc */
+    background-color: #ffcc99;
+    padding: 20px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header .logo {
+    display: flex;
+    align-items: center;     /* ✅ Căn giữa ảnh và chữ */
+    gap: 15px;               /* Khoảng cách đều giữa logo và chữ */
+    }
+
+    .header .logo img {
+    width: 90px;             /* ✅ Logo lớn vừa đủ nổi bật */
+    height: 90px;
+    object-fit: contain;
+    }
+
+    .header .logo h1 {
+    font-size: 32px;         /* ✅ Tăng kích thước chữ */
+    color: #663300;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    text-shadow: 1px 1px 3px rgba(255,255,255,0.4);
+    }
+
+    a {
+        text-decoration: none; /* bỏ gạch chân */
+        color: black;
+    }
+    /* Thanh tìm kiếm & hành động */
+    .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffe5cc;
+    padding: 10px 40px;
+    }
+
+    .search-box {
+    width: 50%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 15px;
+    }
+
+    .actions a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: #663300;
+    font-weight: 600;
+    }
+
+    .actions a:hover {
+    text-decoration: underline;
+    }
+
+    /* Menu */
+    .menu {
+    display: flex;
+    justify-content: center;
+    background-color: #ffb366;
+    padding: 10px 0;
+    gap: 50px;
+    }
+
+    .menu a {
+    text-decoration: none;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    }
+
+    .menu a:hover {
+    color: #663300;
+    }
+
+    /* Lưới sản phẩm */
+    /* ===== DANH SÁCH SẢN PHẨM ===== */
+    .product-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);  /* ✅ 6 cột đều nhau */
+    gap: 20px;
+    justify-items: center;
+    background-color: #fffaf5;
+    padding: 40px 60px;
+    }
+
+    .product {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    width: 180px;
+    text-align: center;
+    padding-bottom: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .product:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+    }
+
+    .product img {
+    width: 100%;
+    height: 150px;           /* ✅ Ảnh cao đều */
+    object-fit: cover;       /* ✅ Cắt ảnh vừa khung */
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    }
+
+    .product h3 {
+    font-size: 16px;
+    margin: 10px 0 5px;
+    color: #222;
+    font-weight: 600;
+    }
+
+    .product p {
+    color: #ff6600;
+    font-weight: bold;
+    margin: 0;
+    }
+
+.menu a.active {
+  color: #fff;
+  background-color: #ff66b2;
+  border-radius: 8px;
+  padding: 5px 10px;
+}

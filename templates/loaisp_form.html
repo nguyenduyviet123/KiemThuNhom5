@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="header">{{ 'Sửa' if item else 'Thêm' }} Loại sản phẩm</div>
+
+  <form method="post">
+    <label>Mã loại</label><br>
+    <input name="MaLoai" 
+           value="{{ item.MaLoai if item }}" 
+           {% if item %}readonly{% endif %}><br><br>
+
+    <label>Tên loại</label><br>
+    <input name="TenLoai" required value="{{ item.TenLoai if item }}"><br><br>
+
+    <button type="submit" class="add-btn">Lưu</button>
+  </form>
+{% endblock %}

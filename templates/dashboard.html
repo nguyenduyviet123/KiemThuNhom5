@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+  <div class="header">Dashboard Quản Lý Bán Bánh</div>
+  <div style="display:flex;gap:12px;">
+    <div class="card">Sản phẩm: {{ products_count }}</div>
+    <div class="card">Loại: {{ types_count }}</div>
+    <div class="card">Tài khoản: {{ accounts_count }}</div>
+  </div>
+{% endblock %}

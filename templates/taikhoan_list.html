@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="header">Quản lý Tài khoản</div>
+  <div class="action-bar">
+    <a href="{{ url_for('taikhoan_add') }}"><button class="add-btn">+ Thêm người dùng</button></a>
+  </div>
+  <table>
+    <tr>
+      <th>MaTK</th><th>Tên đăng nhập</th><th>Email</th><th>Vai trò</th><th>Hành động</th>
+    </tr>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.MaTK }}</td>
+      <td>{{ it.TenDangNhap }}</td>
+      <td>{{ it.Email }}</td>
+      <td>{{ it.VaiTro }}</td>
+      <td>
+        <form style="display:inline" method="post" action="{{ url_for('taikhoan_delete', ma=it.MaTK) }}">
+          <button class="delete-btn" type="submit" onclick="return confirm('Xóa tài khoản này?')">Xóa</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

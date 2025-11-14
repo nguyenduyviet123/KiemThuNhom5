@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ sp[1] }} - Tiệm Bánh SweetHome</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fffaf5;
+      color: #333;
+    }
+
+    .product-container {
+      display: flex;
+      max-width: 950px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .product-image {
+      flex: 1;
+      background-color: #fff3f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+    }
+
+    .product-image img {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .product-details {
+      flex: 1;
+      padding: 30px 35px;
+    }
+
+    .product-details h2 {
+      color: #d24a6c;
+      margin-bottom: 8px;
+    }
+
+    .price {
+      font-size: 22px;
+      color: #000;
+      margin: 10px 0;
+    }
+
+    .discount {
+      color: #999;
+      text-decoration: line-through;
+      margin-left: 10px;
+      font-size: 16px;
+    }
+
+    .description {
+      font-size: 15px;
+      color: #444;
+      margin: 15px 0 25px 0;
+      line-height: 1.6;
+    }
+
+    .add-to-cart {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 25px;
+    }
+
+    .add-btn {
+      background-color: #ff7a8a;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 12px 28px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .add-btn:hover {
+      background-color: #e36476;
+    }
+
+    .cart-message {
+      display: none;
+      margin-top: 15px;
+      color: #2ecc71;
+      font-weight: 600;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="product-container">
+    <div class="product-image">
+      <img src="{{ sp[4] }}" alt="{{ sp[1] }}">
+    </div>
+
+    <div class="product-details">
+      <h2>{{ sp[1] }}</h2>
+      <p class="price">{{ '{:,.0f}'.format(sp[2]) }}đ</p>
+      <p class="description">{{ sp[3] }}</p>
+
+      <div class="add-to-cart">
+        <a href="{{ url_for('add_to_cart', ma_sp=sp[0]) }}">
+          <button class="add-btn">🛒 Thêm vào giỏ hàng</button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

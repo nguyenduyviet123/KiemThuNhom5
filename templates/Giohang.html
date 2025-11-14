@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giỏ Hàng - Tiệm Bánh SweetHome</title>
+<style>
+body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #fffaf5;
+    color: #333;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffcc99;
+    padding: 20px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header .logo img {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+}
+
+.header .logo h1 {
+    font-size: 32px;
+    color: #663300;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    text-shadow: 1px 1px 3px rgba(255,255,255,0.4);
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+table {
+    width: 100%;
+    max-width: 1000px;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+img {
+    width: 80px;
+    height: auto;
+}
+
+.delete {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.delete:hover {
+    background-color: #c0392b;
+}
+
+.Thanhtoan {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.Thanhtoan1 {
+    padding: 12px 28px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: 600;
+    transition: background-color 0.25s ease, transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.Thanhtoan2 {
+    background-color: #3498db;
+}
+
+.Thanhtoan2:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+.total-box {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #d24a6c;
+    text-align: right;
+    width: 100%;
+    max-width: 1000px;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+}
+</style>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <a href="{{ url_for('home') }}">
+      <img src="https://cdn-icons-png.flaticon.com/512/858/858170.png" alt="Logo SweetHome">
+    </a>
+    <h1>🍰 Giỏ hàng 🍰</h1>
+  </div>
+</header>
+
+<main>
+  <section>
+    <form id="cartForm">
+      <table>
+        <thead>
+          <tr>
+            <th>Chọn</th>
+            <th>Ảnh</th>
+            <th>Tên sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Thành tiền</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cart-body">
+          {% for item in items %}
+          <tr data-masp="{{ item[0] }}">
+            <td><input type="checkbox" class="select-item"></td>
+            <td><img src="{{ item[2] }}" alt="{{ item[1] }}"></td>
+            <td>{{ item[1] }}</td>
+            <td><input type="number" class="quantity" value="{{ item[3] }}" min="1"></td>
+            <td class="price">{{ item[4] }}</td>
+            <td class="total">{{ item[5] }}</td>
+            <td><button type="button" class="delete">Xóa</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="total-box">
+        Tổng tiền: <span id="totalPrice">0</span> đ
+      </div>
+
+      <div class="Thanhtoan">
+        <button type="button" id="backHome" class="Thanhtoan1 Thanhtoan2">Quay lại</button>
+        <button type="submit" class="Thanhtoan1 Thanhtoan2">Thanh toán</button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<footer>
+  <p>© 2025 SweetHome Bakery</p>
+</footer>
+
+<script>
+document.getElementById("backHome").addEventListener("click", () => {
+  window.location.href = "{{ url_for('home') }}";
+});
+
+// 🧮 Tính tổng tiền
+function updateTotals() {
+  let total = 0;
+  document.querySelectorAll("#cart-body tr").forEach(row => {
+    const qty = parseInt(row.querySelector(".quantity").value);
+    const price = parseFloat(row.querySelector(".price").textContent);
+    const rowTotal = qty * price;
+    row.querySelector(".total").textContent = rowTotal.toFixed(2);
+
+    // Gửi cập nhật số lượng lên server
+    const ma_sp = row.dataset.masp;
+    fetch(`/update_cart/${ma_sp}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantity: qty })
+    });
+
+    if (row.querySelector(".select-item").checked) total += rowTotal;
+  });
+  document.getElementById("totalPrice").textContent = total.toFixed(2);
+}
+
+// 🗑️ Xóa sản phẩm
+document.querySelectorAll(".delete").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const row = btn.closest("tr");
+    const ma_sp = row.dataset.masp;
+    await fetch(`/xoa_sanpham/${ma_sp}`, { method: 'POST' });
+    row.remove();
+    updateTotals();
+  });
+});
+
+// 🔄 Khi thay đổi số lượng
+document.querySelectorAll(".quantity").forEach(input => {
+  input.addEventListener("change", () => {
+    if (parseInt(input.value) < 1) input.value = 1;
+    updateTotals();
+  });
+});
+
+// ✅ Khi chọn sản phẩm
+document.querySelectorAll(".select-item").forEach(cb => {
+  cb.addEventListener("change", updateTotals);
+});
+
+// 💳 Thanh toán
+document.getElementById("cartForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const total = parseFloat(document.getElementById("totalPrice").textContent);
+
+  if (total <= 0) {
+    Swal.fire({
+      icon: "warning",
+      title: "Chưa chọn sản phẩm!",
+      text: "Vui lòng chọn ít nhất một sản phẩm để thanh toán!",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#3498db"
+    });
+    return;
+  }
+
+  // Gửi yêu cầu thanh toán thật đến Flask
+  const response = await fetch("/checkout", { method: "POST" });
+
+  if (response.ok) {
+    const data = await response.json();
+    Swal.fire({
+      icon: "success",
+      title: "🎉 Thanh toán thành công!",
+      text: data.message,
+      showConfirmButton: false,
+      timer: 2500
+    }).then(() => {
+      window.location.href = "{{ url_for('home') }}";
+    });
+  } else {
+    Swal.fire({
+      icon: "error",
+      title: "Lỗi khi thanh toán!",
+      text: "Vui lòng thử lại sau.",
+      confirmButtonText: "Đóng"
+    });
+  }
+});
+
+// Cập nhật tổng tiền khi tải trang
+window.addEventListener("load", updateTotals);
+</script>
+
+</body>
+</html>

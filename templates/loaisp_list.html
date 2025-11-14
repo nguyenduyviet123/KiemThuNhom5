@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header">Quản lý Loại sản phẩm</div>
+
+<div class="action-bar" style="margin-bottom: 15px;">
+  <a href="{{ url_for('loaisp_add') }}">
+    <button class="add-btn">+ Thêm loại sản phẩm</button>
+  </a>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Mã loại</th>
+      <th>Tên loại</th>
+      <th style="text-align:center;">Hành động</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.MaLoai }}</td>
+      <td>{{ it.TenLoai }}</td>
+      <td style="text-align:center;">
+        <a href="{{ url_for('loaisp_edit', ma=it.MaLoai) }}">
+          <button class="edit-btn">Sửa</button>
+        </a>
+        <form method="post" style="display:inline;"
+              action="{{ url_for('loaisp_delete', ma=it.MaLoai) }}">
+          <button class="delete-btn" type="submit" 
+                  onclick="return confirm('Bạn có chắc muốn xóa loại sản phẩm này không?')">Xóa
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="3" style="text-align:center; color:#888;">
+        Chưa có loại sản phẩm nào.
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+

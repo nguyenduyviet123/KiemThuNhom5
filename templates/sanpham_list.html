@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Quản lý Sản phẩm{% endblock %}
+
+{% block content %}
+<div class="header">🍰 Quản lý Sản phẩm</div>
+
+<!-- Tìm kiếm sản phẩm -->
+<div class="search-bar" style="position:relative; text-align:center; margin:15px 0;">
+  <i class="fa-solid fa-magnifying-glass"
+     style="position:absolute; left:calc(50% - 140px); top:10px; color:#888;"></i>
+  <input type="text" id="searchInput"
+         placeholder="Tìm sản phẩm theo tên hoặc loại..."
+         style="width:300px; padding:8px 12px 8px 32px; border-radius:8px; border:1px solid #ccc;">
+  <div id="suggestions"
+       style="position:absolute; top:110%; left:50%; transform:translateX(-50%);
+              width:300px; background:#fff; border-radius:8px; border:1px solid #ddd;
+              box-shadow:0 4px 10px rgba(0,0,0,0.15); z-index:9999; display:none;">
+  </div>
+</div>
+
+
+<div class="action-bar">
+  <a href="{{ url_for('sanpham_add') }}">
+    <button class="add-btn">➕ Thêm sản phẩm</button>
+  </a>
+</div>
+
+<div class="product-grid">
+  {% for p in products %}
+  <div class="product-card">
+    <img src="{{ p.Anh or url_for('static', filename='img/noimage.png') }}" alt="{{ p.TenSP_ }}">
+    <div class="product-info">
+      <h4>{{ p.TenSP_ }}</h4>
+      <p class="price">{{ "{:,.0f}".format(p.DonGia) }} đ</p>
+
+      <!-- 🕓 Hiển thị thời gian cập nhật -->
+      <small class="update-time">
+        🕓 Cập nhật:
+        {{ p.ThoiGianCapNhat.strftime('%d/%m/%Y %H:%M') if p.ThoiGianCapNhat else 'Chưa có' }}
+      </small>
+
+      <div class="actions">
+        <a href="{{ url_for('sanpham_edit', ma=p.MaSP) }}" title="Sửa">
+          <button class="icon-btn edit"><i>✏️</i></button>
+        </a>
+        <form method="post" action="{{ url_for('sanpham_delete', ma=p.MaSP) }}" style="display:inline;">
+          <button class="icon-btn delete" type="submit" title="Xóa" onclick="return confirm('Xóa sản phẩm này?')">🗑️</button>
+        </form>
+        <a href="{{ url_for('sanpham_view', ma=p.MaSP) }}" class="icon-btn detail" title="Xem chi tiết">
+          🔍
+          <div class="preview-box">
+            <img src="{{ p.Anh or url_for('static', filename='img/noimage.png') }}" alt="{{ p.TenSP_ }}">
+            <h4>{{ p.TenSP_ }}</h4>
+            <p><b>Mã:</b> {{ p.MaSP }}</p>
+            <p><b>Loại:</b> {{ p.TenLoai or p.MaLoai }}</p>
+            <p>
+              <b>Giá:</b>
+              <span class="price-new">{{ "{:,.0f}".format(p.DonGia) }}đ</span>
+              <span class="price-old">{{ "{:,.0f}".format(p.GiaCu) }}đ</span>
+            </p>
+            <p class="desc"><b>Mô tả:</b> {{ p.MoTa or 'Chưa có mô tả' }}</p>
+
+            <!-- 🕓 Hiển thị thời gian cập nhật trong tooltip -->
+            <p><b>🕓 Cập nhật:</b> {{ p.ThoiGianCapNhat.strftime('%d/%m/%Y %H:%M') if p.ThoiGianCapNhat else 'Chưa có' }}</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Modal Chi tiết sản phẩm -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewDetail(maSP) {
+  fetch(`/api/sanpham/${maSP}`)
+    .then(res => res.json())
+    .then(p => {
+      const body = document.getElementById("modal-body");
+      body.innerHTML = `
+        <h2>${p.TenSP_}</h2>
+        <img src="${p.Anh}" alt="${p.TenSP_}" style="max-width:250px;border-radius:10px;margin:10px 0;">
+        <p><b>Giá:</b> ${p.DonGia.toLocaleString('vi-VN')} đ</p>
+        <p><b>Mô tả:</b> ${p.MoTa || 'Chưa có mô tả'}</p>
+        <p><b>Loại:</b> ${p.MaLoai}</p>
+      `;
+      document.getElementById("detailModal").style.display = "block";
+    });
+}
+
+function closeModal() {
+  document.getElementById("detailModal").style.display = "none";
+}
+
+// ✅ Tìm kiếm sản phẩm
+function searchSanPham() {
+  const query = document.getElementById("searchInput").value.trim();
+  const suggestBox = document.getElementById("suggestions");
+  if (!query) {
+    suggestBox.innerHTML = "";
+    suggestBox.style.display = "none";
+    return;
+  }
+
+  fetch(`/api/search_sanpham?q=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (!Array.isArray(data)) {
+        console.error("API trả về sai định dạng:", data);
+        return;
+      }
+      if (data.length === 0) {
+        suggestBox.innerHTML = `<div style="padding:8px;color:#888;">Không tìm thấy sản phẩm</div>`;
+      } else {
+        suggestBox.innerHTML = data.map(p => `
+          <div class="suggestion-item"
+               style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;"
+               onclick="goToProduct('${p.MaSP.trim()}')">
+            <b>${p.TenSP_}</b> <span style="color:#888;">(${p.TenLoai})</span>
+          </div>
+        `).join("");
+      }
+      suggestBox.style.display = "block";
+    })
+    .catch(err => console.error("Lỗi fetch:", err));
+}
+
+function goToProduct(ma) {
+  window.location.href = `/sanpham/view/${ma}`;
+}
+
+// ✅ Xử lý phím Enter
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("searchInput");
+  const suggestBox = document.getElementById("suggestions");
+
+  // 🔍 Khi người dùng gõ
+  input.addEventListener("input", () => {
+    const query = input.value.trim();
+    if (!query) {
+      suggestBox.innerHTML = "";
+      suggestBox.style.display = "none";
+      return;
+    }
+
+    fetch(`/api/search_sanpham?q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        if (data.length === 0) {
+          suggestBox.innerHTML = `<div style="padding:8px;color:#888;">Không tìm thấy sản phẩm</div>`;
+        } else {
+          suggestBox.innerHTML = data.map(p => `
+            <div class="suggestion-item"
+                 style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;"
+                 onclick="window.location.href='/sanpham/view/${p.MaSP.trim()}'">
+              <b>${p.TenSP_}</b> <span style="color:#888;">(${p.TenLoai})</span>
+            </div>
+          `).join("");
+        }
+        suggestBox.style.display = "block";
+      })
+      .catch(err => console.error("❌ Lỗi fetch:", err));
+  });
+
+  // Bấm Enter chọn kết quả đầu tiên
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const firstItem = document.querySelector(".suggestion-item");
+      if (firstItem) firstItem.click();
+    }
+  });
+
+  // Click ra ngoài ẩn gợi ý
+  document.addEventListener("click", (e) => {
+    if (!suggestBox.contains(e.target) && e.target !== input) {
+      suggestBox.style.display = "none";
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Thêm khách hàng{% endblock %}
+{% block content %}
+  <div class="header">Thêm khách hàng mới</div>
+  <form method="post">
+    <label>Tên khách hàng</label><br>
+    <input name="TenKH" required><br>
+
+    <label>Địa chỉ</label><br>
+    <input name="DiaChi"><br>
+
+    <label>Số điện thoại</label><br>
+    <input name="SDT"><br><br>
+
+    <button type="submit" class="add-btn">Lưu</button>
+  </form>
+{% endblock %}
