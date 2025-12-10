@@ -407,47 +407,88 @@ def taikhoan_delete(ma):
 #     cur.close(); conn.close()
 #     return rows
 # ------------------ API TÌM KIẾM SẢN PHẨM ------------------
+# @app.route("/api/search_sanpham")
+# def api_search_sanpham():
+#     q = request.args.get("q", "").lower()
+#     conn = get_connection()
+#     cur = conn.cursor()
+
+#     # --- BỔ SUNG: Kiểm tra xem q có phải tên loại không ---
+#     cur.execute("""
+#         SELECT MaLoai
+#         FROM LOAISANPHAM_
+#         WHERE LOWER(TenLoai) LIKE ?
+#     """, f"%{q}%")
+#     loai = cur.fetchone()
+
+#     if loai:
+#         ma_loai = loai[0]
+
+#         # LẤY ĐÚNG ĐẦY ĐỦ THÔNG TIN SẢN PHẨM ĐỂ FRONTEND HIỂN THỊ
+#         cur.execute("""
+#             SELECT MaSP, TenSP_, Anh, DonGia, TenLoai
+#             FROM SANPHAM s
+#             LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+#             WHERE s.MaLoai = ?
+#         """, ma_loai)
+
+#         rows = rows_to_dicts(cur)
+#         cur.close(); conn.close()
+#         return rows
+#     # --- HẾT BỔ SUNG ---
+
+#     # --- CODE CŨ NHƯNG BỔ SUNG THÔNG TIN ẢNH + GIÁ ---
+#     cur.execute("""
+#         SELECT TOP 5 MaSP, TenSP_, Anh, DonGia, TenLoai 
+#         FROM SANPHAM s
+#         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+#         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
+#     """, f"%{q}%", f"%{q}%")
+
+#     rows = rows_to_dicts(cur)
+#     cur.close(); conn.close()
+#     return rows
+
 @app.route("/api/search_sanpham")
 def api_search_sanpham():
     q = request.args.get("q", "").lower()
     conn = get_connection()
     cur = conn.cursor()
 
-    # --- BỔ SUNG: Kiểm tra xem q có phải tên loại không ---
+    # Kiểm tra tên loại
     cur.execute("""
         SELECT MaLoai
         FROM LOAISANPHAM_
         WHERE LOWER(TenLoai) LIKE ?
-    """, f"%{q}%")
+    """, (f"%{q}%",))
     loai = cur.fetchone()
 
     if loai:
         ma_loai = loai[0]
 
-        # LẤY ĐÚNG ĐẦY ĐỦ THÔNG TIN SẢN PHẨM ĐỂ FRONTEND HIỂN THỊ
         cur.execute("""
             SELECT MaSP, TenSP_, Anh, DonGia, TenLoai
             FROM SANPHAM s
             LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
             WHERE s.MaLoai = ?
-        """, ma_loai)
-
+        """, (ma_loai,))
         rows = rows_to_dicts(cur)
-        cur.close(); conn.close()
-        return rows
-    # --- HẾT BỔ SUNG ---
+        cur.close()
+        conn.close()
+        return jsonify(rows)
 
-    # --- CODE CŨ NHƯNG BỔ SUNG THÔNG TIN ẢNH + GIÁ ---
+    # Tìm theo tên sản phẩm / loại
     cur.execute("""
-        SELECT TOP 5 MaSP, TenSP_, Anh, DonGia, TenLoai 
+        SELECT MaSP, TenSP_, Anh, DonGia, TenLoai 
         FROM SANPHAM s
         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
-    """, f"%{q}%", f"%{q}%")
+    """, (f"%{q}%", f"%{q}%"))
 
     rows = rows_to_dicts(cur)
-    cur.close(); conn.close()
-    return rows
+    cur.close()
+    conn.close()
+    return jsonify(rows)
 
 
 

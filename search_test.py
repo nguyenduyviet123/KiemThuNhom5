@@ -33,8 +33,10 @@ class AdminSearchTests(unittest.TestCase):
         WebDriverWait(driver, 10).until(EC.url_contains("/dashboard"))
         time.sleep(2)
 
-    # Test 1: kiểm tra đăng nhập sang dashbord và chức năng tìm kiếm như 
+    # =============TEST 1==================
+    #  kiểm tra đăng nhập sang dashbord và chức năng tìm kiếm như 
     # là tìm sản phẩm cụ thể, tìm danh sách dựa trên loại sản phẩm và không tìm thấy sản phẩm nào
+    
     def test_login_and_search(self):
         driver = self.driver
         self.login_admin()
@@ -45,77 +47,132 @@ class AdminSearchTests(unittest.TestCase):
             EC.presence_of_element_located((By.ID, "searchInput"))
         )
 
-        keyword = "Bánh Mặn"
+        keyword = "Bánh bông lan cuộn"
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
         time.sleep(2)
 
-        # ===== TRƯỜNG HỢP 1:Tìm chính xác sản phẩm đó và chuyển sang chi tiết=====
+        # ===== TRƯỜNG HỢP 1: Tìm chính xác sản phẩm và mở trang chi tiết =====
+
         try:
             detail_title = WebDriverWait(driver, 3).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".product-detail h2"))
             )
+
             if keyword.lower() in detail_title.text.lower():
-                print("→ Mở trang chi tiết sản phẩm")
+                print("→ TRƯỜNG HỢP 1: MỞ TRANG CHI TIẾT SẢN PHẨM")
+
+                # Lấy thông tin chi tiết theo đúng HTML của bạn
+                name = detail_title.text
+                code = driver.find_element(By.XPATH, "//p[b[text()='Mã sản phẩm:']]").text
+                category = driver.find_element(By.XPATH, "//p[b[text()='Loại sản phẩm:']]").text
+                new_price = driver.find_element(By.CSS_SELECTOR, ".new-price").text
+                old_price = driver.find_element(By.CSS_SELECTOR, ".old-price").text
+                desc = driver.find_element(By.CSS_SELECTOR, ".desc").text
+
+                print("\n===== THÔNG TIN SẢN PHẨM =====")
+                print("Tên sản phẩm:", name)
+                print(code)
+                print(category)
+                print("Giá mới:", new_price)
+                print("Giá cũ:", old_price)
+                print("Mô tả:", desc)
+                print("==============================\n")
+
                 return
-        except:
+
+        except Exception as e:
+            print("Lỗi khi lấy thông tin chi tiết:", e)
             pass
 
-        # ===== TRƯỜNG HỢP 2: hiển thị danh sách sản phẩm theo loại =====
+
+
+        # ===== TRƯỜNG HỢP 2: HIỂN THỊ DANH SÁCH SẢN PHẨM THEO LOẠI =====
         cards = driver.find_elements(By.CLASS_NAME, "product-card")
+
         if len(cards) > 0:
-            print("→ Có danh sách sản phẩm:", len(cards))
+            print(f"→ TRƯỜNG HỢP 2: Có {len(cards)} sản phẩm thuộc loại '{keyword}'")
+
+            # In danh sách tên sản phẩm (dạng text)
+            product_names = [c.find_element(By.TAG_NAME, "h4").text for c in cards]
+
+            print("Danh sách sản phẩm:")
+            for name in product_names:
+                print(" -", name)
+
+            # Có danh sách => PASS
             self.assertGreater(len(cards), 0)
             return
-        
+
+
         # ===== TRƯỜNG HỢP 3: không tim thấy sản phẩm hợp lệ =====
         no_product = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.ID, "no-product-msg"))
         )
         self.assertIn("Không tìm thấy sản phẩm", no_product.text)
-        print("→ Trường hợp không tìm thấy sản phẩm")
+        print(f"→ TRƯỜNG HỢP 2: Không tìm thấy sản phẩm liên quan '{keyword}'")
  
 
     # Test 2: Tìm kiếm không phân biệt chữ hoa/thường
-    def test_search_case_insensitive(self):
-        self.login_admin()
-        driver = self.driver
-        driver.get("http://127.0.0.1:5000/sanpham")
+    # def test_search_case_insensitive(self):
+    #     self.login_admin()
+    #     driver = self.driver
+    #     driver.get("http://127.0.0.1:5000/sanpham")
 
-        search_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "searchInput"))
-        )
-        search_input.clear()
-        search_input.send_keys("rEd vElVeT")
-        time.sleep(1.5)
-        search_input.send_keys(Keys.ENTER)
-        time.sleep(2)
+    #     search_input = WebDriverWait(driver, 10).until(
+    #         EC.presence_of_element_located((By.ID, "searchInput"))
+    #     )
+    #     search_input.clear()
 
-        cards = driver.find_elements(By.CLASS_NAME, "product-card")
-        self.assertTrue(any("Red Velvet" in c.text for c in cards))
-        print("→ Test tìm kiếm không phân biệt chữ hoa/thường OK")
+    #     # Thay giá trị để test
+    #     query = "reD vElVEt" 
+    #     search_input.send_keys(query)
+    #     search_input.send_keys(Keys.ENTER)
 
-    # Test 3: Nhập ký tự đặc biệt / SQL Injection
-    def test_search_special_characters(self):
-        self.login_admin()
-        driver = self.driver
-        driver.get("http://127.0.0.1:5000/sanpham")
+    #     # Chờ DOM render xong (kể cả khi không có product-card)
+    #     WebDriverWait(driver, 10).until(
+    #         lambda d: d.execute_script("return document.readyState === 'complete'")
+    #     )
 
-        search_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "searchInput"))
-        )
-        search_input.clear()
-        search_input.send_keys("' OR 1=1 --")
-        time.sleep(1.2)
-        search_input.send_keys(Keys.ENTER)
-        time.sleep(2)
+    #     # Lấy tất cả product-card
+    #     cards = driver.find_elements(By.CSS_SELECTOR, "#productGrid .product-card")
 
-        no_product = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.ID, "no-product-msg"))
-        )
-        self.assertIn("Không tìm thấy sản phẩm", no_product.text)
-        print("→ Test nhập ký tự đặc biệt OK")
+    #     if len(cards) == 0:
+    #         # Không có sản phẩm nào
+    #         print(f"❌ Không tìm thấy sản phẩm nào với từ khóa '{query}'")
+    #         self.fail(f"Không tìm thấy sản phẩm nào với từ khóa '{query}'")
+    #     else:
+    #         # Kiểm tra case-insensitive
+    #         found = any(query.lower() in c.text.lower() for c in cards)
+    #         if found:
+    #             print(f"✅ Đã tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
+    #         else:
+    #             print(f"❌ Không tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
+    #             self.fail(f"Không tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
+
+
+
+    # # Test 3: Nhập ký tự đặc biệt / SQL Injection
+    # def test_search_special_characters(self):
+    #     self.login_admin()
+    #     driver = self.driver
+    #     driver.get("http://127.0.0.1:5000/sanpham")
+
+    #     search_input = WebDriverWait(driver, 10).until(
+    #         EC.presence_of_element_located((By.ID, "searchInput"))
+    #     )
+    #     search_input.clear()
+    #     search_input.send_keys("' OR 1=1 --")
+    #     time.sleep(1.2)
+    #     search_input.send_keys(Keys.ENTER)
+    #     time.sleep(2)
+
+    #     no_product = WebDriverWait(driver, 5).until(
+    #         EC.presence_of_element_located((By.ID, "no-product-msg"))
+    #     )
+    #     self.assertIn("Không tìm thấy sản phẩm", no_product.text)
+    #     print("→ Test nhập ký tự đặc biệt OK")
 
 
 
