@@ -45,7 +45,7 @@ class AdminSearchTests(unittest.TestCase):
             EC.presence_of_element_located((By.ID, "searchInput"))
         )
 
-        keyword = "Bánhhhhhhhhhhh"
+        keyword = "Bánh Mặn"
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
