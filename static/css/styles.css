@@ -198,7 +198,14 @@ input:focus, textarea:focus, select:focus {
   background-color: #ffd6d6;
   color: #eb2f06;
 }
-
+.flash.danger {
+    background-color: #ffb3b3 !important;   /* màu đỏ nhạt */
+    color: #a80000 !important;              /* màu chữ đỏ đậm */
+    border: 1px solid #ff4d4d !important;   /* viền đỏ */
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+}
 /* ====== Responsive ====== */
 @media (max-width: 768px) {
   body { flex-direction: column; }
@@ -486,6 +493,11 @@ button::-moz-focus-inner { border: 0; }
 .suggestion-item span {
   color: #888;
   font-size: 13px;
+}
+
+/*thanh gợi ý*/
+.suggestion-item.active {
+  background: #e6f0ff;
 }
 
 .loading {

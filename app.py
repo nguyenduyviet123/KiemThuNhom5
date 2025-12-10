@@ -14,7 +14,7 @@ def rows_to_dicts(cursor):
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
 #------------------Trang chủ(DashBoard)-----------------
-@app.route("/")
+@app.route("/dashboard")
 def index():
     conn = get_connection()
     cur = conn.cursor()
@@ -41,19 +41,40 @@ def loaisp_list():
     cur.close(); conn.close()
     return render_template("loaisp_list.html", items=items)
 
+from flask import Flask, render_template, request, redirect, url_for, flash
+from uuid import uuid4
+
 @app.route("/loaisp/add", methods=["GET","POST"])
 def loaisp_add():
     if request.method == "POST":
-        ma = request.form.get("MaLoai") or str(uuid4())[:8]  # nhập hoặc tự sinh
+        # Lấy dữ liệu từ form hoặc tự sinh mã
+        ma = request.form.get("MaLoai") or str(uuid4())[:8]  
         ten = request.form.get("TenLoai")
+        
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("INSERT INTO LOAISANPHAM_ (MaLoai, TenLoai) VALUES (?, ?)", ma, ten)
+
+        # ✅ KIỂM TRA TRÙNG MÃ LOẠI SẢN PHẨM
+        cur.execute("SELECT MaLoai FROM LOAISANPHAM_ WHERE MaLoai = ?", (ma,))
+        exists = cur.fetchone()
+        if exists:
+            cur.close()
+            conn.close()
+            flash(f"Mã loại sản phẩm {ma} đã tồn tại! Vui lòng nhập mã khác.", "danger")
+            return redirect(url_for("loaisp_add"))  # quay lại form thêm
+        
+        # Thêm loại sản phẩm mới
+        cur.execute("INSERT INTO LOAISANPHAM_ (MaLoai, TenLoai) VALUES (?, ?)", (ma, ten))
         conn.commit()
-        cur.close(); conn.close()
+        cur.close()
+        conn.close()
+
         flash("Thêm loại sản phẩm thành công", "success")
         return redirect(url_for("loaisp_list"))
+
+    # GET request: hiển thị form
     return render_template("loaisp_form.html", item=None)
+
 
 
 @app.route("/loaisp/edit/<ma>", methods=["GET","POST"])
@@ -90,15 +111,18 @@ def sanpham_list():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT s.MaSP, s.TenSP_, s.DonGia, s.GiaCu, s.MoTa, s.Anh,
+        SELECT 
+            s.MaSP, s.TenSP_, s.DonGia, s.GiaCu, s.MoTa, s.Anh,
             s.MaLoai, l.TenLoai, s.ThoiGianCapNhat
         FROM SANPHAM s
         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+        WHERE s.TrangThai = 1       -- chỉ lấy sản phẩm chưa xóa
         ORDER BY s.MaSP
     """)
 
     products = rows_to_dicts(cur)
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
     return render_template("sanpham_list.html", products=products)
 
 
@@ -115,7 +139,17 @@ def sanpham_add():
         mota = request.form.get("MoTa")
         anh = request.form.get("Anh")
         maloai = request.form.get("MaLoai")
+ # ✅ KIỂM TRA TRÙNG MÃ SẢN PHẨM
+        # ---------------------------
+        cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
+        exists = cur.fetchone()
 
+        if exists:
+            cur.close(); conn.close()
+            flash(f"Mã sản phẩm {ma} đã tồn tại! Vui lòng nhập mã khác.", "danger")
+            return redirect(url_for("sanpham_add"))
+        
+#Them
         cur.execute("""
             INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai,ThoiGianCapNhat)
             VALUES (?, ?, ?, ?, ?, ?, ?,GETDATE())
@@ -170,11 +204,61 @@ def sanpham_edit(ma):
 def sanpham_delete(ma):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM SANPHAM WHERE MaSP = ?", ma)
+    
+    # Chuyển sản phẩm vào thùng rác
+    cur.execute("""
+        UPDATE SANPHAM SET TrangThai = 0 WHERE MaSP = ?
+    """, ma)
+    
     conn.commit()
     cur.close(); conn.close()
-    flash("Đã xóa sản phẩm", "warning")
+    
+    flash("Sản phẩm đã được chuyển vào thùng rác", "warning")
     return redirect(url_for("sanpham_list"))
+
+# thùng rác
+@app.route("/sanpham/trash")
+def sanpham_trash():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT s.MaSP, s.TenSP_, s.DonGia, s.Anh, l.TenLoai
+        FROM SANPHAM s
+        LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+        WHERE s.TrangThai = 0
+        ORDER BY s.MaSP
+    """)
+    items = rows_to_dicts(cur)
+    cur.close(); conn.close()
+    return render_template("sanpham_trash.html", items=items)
+
+@app.route("/sanpham/restore/<ma>", methods=["POST"])
+def sanpham_restore(ma):
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        UPDATE SANPHAM SET TrangThai = 1 WHERE MaSP = ?
+    """, ma)
+    
+    conn.commit()
+    cur.close(); conn.close()
+    flash("Khôi phục sản phẩm thành công!", "success")
+    return redirect(url_for("sanpham_trash"))
+
+@app.route("/sanpham/delete_permanent/<ma>", methods=["POST"])
+def sanpham_delete_permanent(ma):
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("DELETE FROM SANPHAM WHERE MaSP = ?", ma)
+    
+    conn.commit()
+    cur.close(); conn.close()
+    flash("Đã xóa sản phẩm vĩnh viễn!", "danger")
+    return redirect(url_for("sanpham_trash"))
+
+
 
 
 # ✅ API trả về chi tiết sản phẩm (cho modal “Xem chi tiết”)
@@ -308,20 +392,65 @@ def taikhoan_delete(ma):
     return redirect(url_for("taikhoan_list", deleted=1))
 
 # ------------------ API TÌM KIẾM SẢN PHẨM ------------------
+# @app.route("/api/search_sanpham")
+# def api_search_sanpham():
+#     q = request.args.get("q", "").lower()
+#     conn = get_connection()
+#     cur = conn.cursor()
+#     cur.execute("""
+#         SELECT TOP 5 MaSP, TenSP_, TenLoai 
+#         FROM SANPHAM s
+#         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+#         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
+#     """, f"%{q}%", f"%{q}%")
+#     rows = rows_to_dicts(cur)
+#     cur.close(); conn.close()
+#     return rows
+# ------------------ API TÌM KIẾM SẢN PHẨM ------------------
 @app.route("/api/search_sanpham")
 def api_search_sanpham():
     q = request.args.get("q", "").lower()
     conn = get_connection()
     cur = conn.cursor()
+
+    # --- BỔ SUNG: Kiểm tra xem q có phải tên loại không ---
     cur.execute("""
-        SELECT TOP 5 MaSP, TenSP_, TenLoai 
+        SELECT MaLoai
+        FROM LOAISANPHAM_
+        WHERE LOWER(TenLoai) LIKE ?
+    """, f"%{q}%")
+    loai = cur.fetchone()
+
+    if loai:
+        ma_loai = loai[0]
+
+        # LẤY ĐÚNG ĐẦY ĐỦ THÔNG TIN SẢN PHẨM ĐỂ FRONTEND HIỂN THỊ
+        cur.execute("""
+            SELECT MaSP, TenSP_, Anh, DonGia, TenLoai
+            FROM SANPHAM s
+            LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
+            WHERE s.MaLoai = ?
+        """, ma_loai)
+
+        rows = rows_to_dicts(cur)
+        cur.close(); conn.close()
+        return rows
+    # --- HẾT BỔ SUNG ---
+
+    # --- CODE CŨ NHƯNG BỔ SUNG THÔNG TIN ẢNH + GIÁ ---
+    cur.execute("""
+        SELECT TOP 5 MaSP, TenSP_, Anh, DonGia, TenLoai 
         FROM SANPHAM s
         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
     """, f"%{q}%", f"%{q}%")
+
     rows = rows_to_dicts(cur)
     cur.close(); conn.close()
     return rows
+
+
+
 
 
 
@@ -365,7 +494,8 @@ def api_search_sanpham():
 #    conn.close()
 #    return render_template('home.html', products=products)
 
-@app.route("/home")
+
+@app.route("/")
 def home():
     conn = get_connection()
     cursor = conn.cursor()
@@ -373,10 +503,17 @@ def home():
     cursor.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_ ORDER BY TenLoai")
     categories = cursor.fetchall()
     # Lấy tất cả sản phẩm
-    cursor.execute("SELECT MaSP, TenSP_, DonGia, Anh, MaLoai FROM SANPHAM")
+    cursor.execute("""
+    SELECT MaSP, TenSP_, DonGia, Anh, MaLoai
+    FROM SANPHAM
+    WHERE TrangThai = 1
+""")
+
     products = cursor.fetchall()
     conn.close()
     return render_template('home.html', products=products, categories=categories, ma_loai_hien_tai=None)
+
+
 
 
 @app.route("/home/loai/<ma_loai>")
@@ -387,17 +524,28 @@ def home_loai(ma_loai):
     cursor.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_ ORDER BY TenLoai")
     categories = cursor.fetchall()
     # Lấy sản phẩm theo loại
-    cursor.execute("SELECT MaSP, TenSP_, DonGia, Anh, MaLoai FROM SANPHAM WHERE MaLoai = ?", (ma_loai,))
+    cursor.execute("""
+    SELECT MaSP, TenSP_, DonGia, Anh, MaLoai
+    FROM SANPHAM
+    WHERE MaLoai = ? AND TrangThai = 1
+""", (ma_loai,))
+
     products = cursor.fetchall()
     conn.close()
     return render_template("home.html", products=products, categories=categories, ma_loai_hien_tai=int(ma_loai))
 
-# Trang chi tiết sản phẩm
+
+
 @app.route('/chitiet/<ma_sp>')
 def chitiet(ma_sp):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT MaSP, TenSP_, DonGia, MoTa, Anh FROM SANPHAM WHERE MaSP=?", (ma_sp),)
+    cursor.execute("""
+    SELECT MaSP, TenSP_, DonGia, MoTa, Anh 
+    FROM SANPHAM 
+    WHERE MaSP=? AND TrangThai=1
+    """, (ma_sp,))
+
     sp = cursor.fetchone()
     conn.close()
     return render_template('CTSP.html', sp=sp)
@@ -448,39 +596,58 @@ def giohang():
 def add_to_cart(ma_sp):
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Kiểm tra giỏ hàng GH01 đã tồn tại chưa
     cursor.execute("SELECT MaGH FROM GIO_HANG WHERE MaGH = 'GH01'")
     if not cursor.fetchone():
-        cursor.execute("INSERT INTO GIO_HANG (MaGH, MaKH, NgayTao) VALUES ('GH01', 'KH01', GETDATE())")
-
+        cursor.execute("""
+            INSERT INTO GIO_HANG (MaGH, MaKH, NgayTao)
+            VALUES ('GH01', 'KH01', GETDATE())
+        """)
 
     ma_sp = ma_sp.strip()
-    cursor.execute("SELECT DonGia FROM SANPHAM WHERE MaSP = ?", (ma_sp),)
-    result = cursor.fetchone()
-    if not result:
+
+    # Lấy đơn giá sản phẩm
+    cursor.execute("SELECT DonGia FROM SANPHAM WHERE MaSP = ?", (ma_sp,))
+    sp = cursor.fetchone()
+
+    if not sp:
         conn.close()
-        return "Sản phẩm không tồn tại", 404
+        flash("Sản phẩm không tồn tại!", "danger")
+        return redirect(url_for("home"))
 
-    don_gia = result[0]
-    cursor.execute("SELECT SoLuong FROM CHITIETGIOHANG WHERE MaSP=? AND MaGH='GH01'", (ma_sp),)
-    existing = cursor.fetchone()
+    don_gia = sp[0]
 
-    if existing:
-        so_luong_moi = existing[0] + 1
+    # Kiểm tra sản phẩm đã có trong giỏ
+    cursor.execute("""
+        SELECT SoLuong FROM CHITIETGIOHANG
+        WHERE MaGH = 'GH01' AND MaSP = ?
+    """, (ma_sp,))
+    item = cursor.fetchone()
+
+    if item:
+        # Nếu đã tồn tại → tăng số lượng
+        so_luong_moi = item[0] + 1
         thanh_tien = so_luong_moi * don_gia
+
         cursor.execute("""
             UPDATE CHITIETGIOHANG
-            SET SoLuong=?, ThanhTien=?
-            WHERE MaSP=? AND MaGH='GH01'
+            SET SoLuong = ?, ThanhTien = ?
+            WHERE MaGH = 'GH01' AND MaSP = ?
         """, (so_luong_moi, thanh_tien, ma_sp))
     else:
+        # Nếu chưa có → thêm mới
         cursor.execute("""
-            INSERT INTO CHITIETGIOHANG (MaSP, MaGH, SoLuong, DonGia, ThanhTien)
-            VALUES (?, 'GH01', 1, ?, ?)
+            INSERT INTO CHITIETGIOHANG (MaGH, MaSP, SoLuong, DonGia, ThanhTien)
+            VALUES ('GH01', ?, 1, ?, ?)
         """, (ma_sp, don_gia, don_gia))
 
     conn.commit()
     conn.close()
-    return redirect(url_for('giohang'))
+
+    flash("Đã thêm sản phẩm vào giỏ!", "success")
+    return redirect(url_for("giohang"))
+
 
 # Xóa sản phẩm khỏi giỏ hàng
 @app.route('/xoa_sanpham/<ma_sp>', methods=['POST'])

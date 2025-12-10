@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>🗑️ Thùng rác sản phẩm</h2>
+
+<table class="table">
+    <tr>
+        <th>Mã</th><th>Tên sản phẩm</th><th>Ảnh</th><th>Loại</th><th>Hành động</th>
+    </tr>
+
+    {% for p in items %}
+    <tr>
+        <td>{{ p.MaSP }}</td>
+        <td>{{ p.TenSP_ }}</td>
+        <td><img src="{{ p.Anh }}" width="60"></td>
+        <td>{{ p.TenLoai }}</td>
+        <td>
+            <form action="{{ url_for('sanpham_restore', ma=p.MaSP) }}" method="post" style="display:inline;">
+                <button class="btn btn-success">Khôi phục</button>
+            </form>
+
+            <form action="{{ url_for('sanpham_delete_permanent', ma=p.MaSP) }}" method="post" style="display:inline;">
+                <button class="btn btn-danger" onclick="return confirm('Xóa vĩnh viễn?')">Xóa vĩnh viễn</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
