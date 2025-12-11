@@ -449,46 +449,33 @@ def taikhoan_delete(ma):
 #     cur.close(); conn.close()
 #     return rows
 
-@app.route("/api/search_sanpham")
+@app.route("/api/search_sanpham", methods=["GET"])
 def api_search_sanpham():
-    q = request.args.get("q", "").lower()
+    q = request.args.get("q", "").strip().lower()
+
     conn = get_connection()
     cur = conn.cursor()
 
-    # Kiểm tra tên loại
     cur.execute("""
-        SELECT MaLoai
-        FROM LOAISANPHAM_
-        WHERE LOWER(TenLoai) LIKE ?
-    """, (f"%{q}%",))
-    loai = cur.fetchone()
-
-    if loai:
-        ma_loai = loai[0]
-
-        cur.execute("""
-            SELECT MaSP, TenSP_, Anh, DonGia, TenLoai
-            FROM SANPHAM s
-            LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-            WHERE s.MaLoai = ?
-        """, (ma_loai,))
-        rows = rows_to_dicts(cur)
-        cur.close()
-        conn.close()
-        return jsonify(rows)
-
-    # Tìm theo tên sản phẩm / loại
-    cur.execute("""
-        SELECT MaSP, TenSP_, Anh, DonGia, TenLoai 
+        SELECT 
+            RTRIM(s.MaSP) AS MaSP,
+            s.TenSP_,
+            s.Anh,
+            s.DonGia,
+            RTRIM(l.TenLoai) AS TenLoai
         FROM SANPHAM s
-        LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-        WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
+        LEFT JOIN LOAISANPHAM_ l 
+            ON RTRIM(s.MaLoai) = RTRIM(l.MaLoai)
+        WHERE LOWER(s.TenSP_) LIKE ?
+           OR LOWER(l.TenLoai) LIKE ?
     """, (f"%{q}%", f"%{q}%"))
 
     rows = rows_to_dicts(cur)
+
     cur.close()
     conn.close()
-    return jsonify(rows)
+
+    return jsonify(rows), 200
 
 
 
