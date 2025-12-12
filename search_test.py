@@ -47,7 +47,7 @@ class AdminSearchTests(unittest.TestCase):
             EC.presence_of_element_located((By.ID, "searchInput"))
         )
 
-        keyword = "Bánhuiyfutyrdfszh S"
+        keyword = "Bánh S"
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
@@ -114,7 +114,7 @@ class AdminSearchTests(unittest.TestCase):
         print(f"→ TRƯỜNG HỢP 3: Không tìm thấy sản phẩm liên quan '{keyword}'")
  
 
-    # ==============TEST 2: Tìm kiếm không phân biệt chữ hoa/thường================
+    #==============TEST 2: Tìm kiếm không phân biệt chữ hoa/thường================
     # def test_search_case_insensitive(self):
     #     self.login_admin()
     #     driver = self.driver
@@ -146,10 +146,10 @@ class AdminSearchTests(unittest.TestCase):
     #         # Kiểm tra case-insensitive
     #         found = any(query.lower() in c.text.lower() for c in cards)
     #         if found:
-    #             print(f"✅ Đã tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
+    #             print(f"✅ Đã tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
     #         else:
-    #             print(f"❌ Không tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
-    #             self.fail(f"Không tìm thấy sản phẩm 'Red Velvet' với từ khóa '{query}'")
+    #             print(f"❌ Không tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
+    #             self.fail(f"Không tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
 
 
         #=============TEST 3: kiểm tra kí tự đặc biệt=========
