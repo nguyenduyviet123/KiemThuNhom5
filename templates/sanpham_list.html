@@ -199,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("input", () => {
         const query = input.value.trim();
         selectedIndex = -1; // reset
+
         if (!query) {
             suggestBox.style.display = "none";
             suggestBox.innerHTML = "";
@@ -208,20 +209,29 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch(`/api/search_sanpham?q=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(data => {
+
+                // Kiểm tra xem API có trả về mảng không
                 if (!Array.isArray(data) || data.length === 0) {
                     suggestBox.innerHTML = `<div style="padding:8px;color:#888;">Không tìm thấy sản phẩm</div>`;
                 } else {
-                    suggestBox.innerHTML = data.map(p => `
+
+                    // 🔥 CHỈ LẤY 5 GỢI Ý ĐẦU TIÊN
+                    const limitData = data.slice(0, 5);
+
+                    suggestBox.innerHTML = limitData.map(p => `
                         <div class="suggestion-item"
-                             onclick="window.location.href='/sanpham/view/${p.MaSP.trim()}'">
+                            onclick="window.location.href='/sanpham/view/${p.MaSP.trim()}'">
                             <b>${p.TenSP_}</b>
                             <span>(${p.TenLoai})</span>
                         </div>
                     `).join("");
                 }
+
                 suggestBox.style.display = "block";
-            });
+            })
+            .catch(err => console.error("Lỗi fetch:", err));
     });
+
 
     // ====== PHÍM LÊN/XUỐNG/ENTER ======
     input.addEventListener("keydown", (e) => {
@@ -271,6 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ====== CLICK RA NGOÀI → ẨN GỢI Ý ======
+        input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            suggestBox.style.display = "none";
+        }
+    });
+
     document.addEventListener("click", (e) => {
         if (!suggestBox.contains(e.target) && e.target !== input) {
             suggestBox.style.display = "none";

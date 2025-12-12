@@ -47,7 +47,7 @@ class AdminSearchTests(unittest.TestCase):
             EC.presence_of_element_located((By.ID, "searchInput"))
         )
 
-        keyword = "Bánhhìuuyfuy"
+        keyword = "Bánhuiyfutyrdfszh S"
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
@@ -111,7 +111,7 @@ class AdminSearchTests(unittest.TestCase):
             EC.presence_of_element_located((By.ID, "no-product-msg"))
         )
         self.assertIn("Không tìm thấy sản phẩm", no_product.text)
-        print(f"→ TRƯỜNG HỢP 2: Không tìm thấy sản phẩm liên quan '{keyword}'")
+        print(f"→ TRƯỜNG HỢP 3: Không tìm thấy sản phẩm liên quan '{keyword}'")
  
 
     # ==============TEST 2: Tìm kiếm không phân biệt chữ hoa/thường================
