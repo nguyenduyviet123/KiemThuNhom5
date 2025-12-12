@@ -462,6 +462,7 @@ def api_search_sanpham():
             s.TenSP_,
             s.Anh,
             s.DonGia,
+            s.GiaCu,
             RTRIM(l.TenLoai) AS TenLoai
         FROM SANPHAM s
         LEFT JOIN LOAISANPHAM_ l 
@@ -475,7 +476,18 @@ def api_search_sanpham():
     cur.close()
     conn.close()
 
-    return jsonify(rows), 200
+    # Nếu không tìm thấy → vẫn trả về mảng rỗng + message
+    if not rows:
+        return jsonify({
+            "message": "Không tìm thấy sản phẩm.",
+            "data": []
+        }), 200
+
+    # Nếu có dữ liệu
+    return jsonify({
+        "message": "Tìm thấy sản phẩm.",
+        "data": rows
+    }), 200
 
 
 
