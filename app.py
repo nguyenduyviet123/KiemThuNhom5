@@ -126,12 +126,33 @@ def sanpham_list():
     return render_template("sanpham_list.html", products=products)
 
 
+        #=============Thêm sản phẩm================
+
 @app.route("/sanpham/add", methods=["GET", "POST"])
 def sanpham_add():
     conn = get_connection()
     cur = conn.cursor()
 
-    if request.method == "POST":
+    # Nếu GET → trả form
+    if request.method == "GET":
+        cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
+        loai = rows_to_dicts(cur)
+        cur.close()
+        conn.close()
+        return render_template("sanpham_form.html", item=None, loai=loai)
+
+    # Nếu POST → JSON (API) hoặc FORM (Web)
+    if request.is_json:
+        data = request.get_json()
+        ma = data.get("MaSP")
+        ten = data.get("TenSP")
+        dongia = data.get("DonGia")
+        giacu = data.get("GiaCu", 0)
+        mota = data.get("MoTa", "")
+        anh = data.get("Anh", "")
+        maloai = data.get("MaLoai", "")
+        from_api = True
+    else:
         ma = request.form.get("MaSP") or str(uuid4())[:8]
         ten = request.form.get("TenSP_")
         dongia = request.form.get("DonGia") or 0
@@ -139,33 +160,50 @@ def sanpham_add():
         mota = request.form.get("MoTa")
         anh = request.form.get("Anh")
         maloai = request.form.get("MaLoai")
- # ✅ KIỂM TRA TRÙNG MÃ SẢN PHẨM
-        # ---------------------------
-        cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
-        exists = cur.fetchone()
+        from_api = False
 
-        if exists:
-            cur.close(); conn.close()
-            flash(f"Mã sản phẩm {ma} đã tồn tại! Vui lòng nhập mã khác.", "danger")
+    # ❗ KIỂM TRA TÊN SẢN PHẨM TRỐNG
+    if not ten or ten.strip() == "":
+        if from_api:
+            return jsonify({"error": "Tên sản phẩm không được để trống!"}), 400
+        else:
+            flash("Tên sản phẩm không được để trống!", "danger")
+            cur.close()
+            conn.close()
             return redirect(url_for("sanpham_add"))
-        
-#Them
-        cur.execute("""
-            INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai,ThoiGianCapNhat)
-            VALUES (?, ?, ?, ?, ?, ?, ?,GETDATE())
-        """, ma, ten, dongia, giacu, mota, anh, maloai)
-        conn.commit()
 
-        cur.close(); conn.close()
+    # KIỂM TRA TRÙNG MÃ
+    cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
+    if cur.fetchone():
+        cur.close()
+        conn.close()
+        if from_api:
+            return jsonify({"error": f"Mã sản phẩm {ma} đã tồn tại!"}), 400
+        else:
+            flash(f"Mã sản phẩm {ma} đã tồn tại!", "danger")
+            return redirect(url_for("sanpham_add"))
+
+    # INSERT
+    cur.execute("""
+        INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai, ThoiGianCapNhat)
+        VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
+    """, ma, ten, dongia, giacu, mota, anh, maloai)
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    # Trả về tùy request
+    if from_api:
+        return jsonify({"msg": "Thêm API thành công!"})
+    else:
         flash("Thêm sản phẩm thành công", "success")
         return redirect(url_for("sanpham_list"))
-
-    cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
-    loai = rows_to_dicts(cur)
-    cur.close(); conn.close()
-    return render_template("sanpham_form.html", item=None, loai=loai)
+    
+    
 
 
+#=============Sửa sản phẩm================
 @app.route("/sanpham/edit/<ma>", methods=["GET", "POST"])
 def sanpham_edit(ma):
     conn = get_connection()
@@ -391,64 +429,8 @@ def taikhoan_delete(ma):
     # Redirect kèm query param
     return redirect(url_for("taikhoan_list", deleted=1))
 
-# ------------------ API TÌM KIẾM SẢN PHẨM ------------------
-# @app.route("/api/search_sanpham")
-# def api_search_sanpham():
-#     q = request.args.get("q", "").lower()
-#     conn = get_connection()
-#     cur = conn.cursor()
-#     cur.execute("""
-#         SELECT TOP 5 MaSP, TenSP_, TenLoai 
-#         FROM SANPHAM s
-#         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-#         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
-#     """, f"%{q}%", f"%{q}%")
-#     rows = rows_to_dicts(cur)
-#     cur.close(); conn.close()
-#     return rows
-# ------------------ API TÌM KIẾM SẢN PHẨM ------------------
-# @app.route("/api/search_sanpham")
-# def api_search_sanpham():
-#     q = request.args.get("q", "").lower()
-#     conn = get_connection()
-#     cur = conn.cursor()
 
-#     # --- BỔ SUNG: Kiểm tra xem q có phải tên loại không ---
-#     cur.execute("""
-#         SELECT MaLoai
-#         FROM LOAISANPHAM_
-#         WHERE LOWER(TenLoai) LIKE ?
-#     """, f"%{q}%")
-#     loai = cur.fetchone()
-
-#     if loai:
-#         ma_loai = loai[0]
-
-#         # LẤY ĐÚNG ĐẦY ĐỦ THÔNG TIN SẢN PHẨM ĐỂ FRONTEND HIỂN THỊ
-#         cur.execute("""
-#             SELECT MaSP, TenSP_, Anh, DonGia, TenLoai
-#             FROM SANPHAM s
-#             LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-#             WHERE s.MaLoai = ?
-#         """, ma_loai)
-
-#         rows = rows_to_dicts(cur)
-#         cur.close(); conn.close()
-#         return rows
-#     # --- HẾT BỔ SUNG ---
-
-#     # --- CODE CŨ NHƯNG BỔ SUNG THÔNG TIN ẢNH + GIÁ ---
-#     cur.execute("""
-#         SELECT TOP 5 MaSP, TenSP_, Anh, DonGia, TenLoai 
-#         FROM SANPHAM s
-#         LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-#         WHERE LOWER(TenSP_) LIKE ? OR LOWER(TenLoai) LIKE ?
-#     """, f"%{q}%", f"%{q}%")
-
-#     rows = rows_to_dicts(cur)
-#     cur.close(); conn.close()
-#     return rows
-
+    # ------------------ API TÌM KIẾM SẢN PHẨM ------------------
 @app.route("/api/search_sanpham", methods=["GET"])
 def api_search_sanpham():
     q = request.args.get("q", "").strip().lower()
