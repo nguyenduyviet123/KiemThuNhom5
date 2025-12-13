@@ -407,7 +407,6 @@ def sanpham_restore(ma):
 
 
 
-
 # ✅ API trả về chi tiết sản phẩm (cho modal “Xem chi tiết”)
 @app.route("/api/sanpham/<ma>")
 def api_sanpham_detail(ma):
