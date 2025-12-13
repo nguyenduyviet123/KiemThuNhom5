@@ -49,6 +49,7 @@ def loaisp_list():
 from flask import Flask, render_template, request, redirect, url_for, flash
 from uuid import uuid4
 
+#===============Thêm Loại Sản phẩm===============
 @app.route("/loaisp/add", methods=["GET","POST"])
 def loaisp_add():
     if request.method == "POST":
@@ -80,8 +81,7 @@ def loaisp_add():
     # GET request: hiển thị form
     return render_template("loaisp_form.html", item=None)
 
-
-
+#=============Sửa Loại Sản Phẩm==============
 @app.route("/loaisp/edit/<ma>", methods=["GET","POST"])
 def loaisp_edit(ma):
     conn = get_connection()
@@ -99,6 +99,7 @@ def loaisp_edit(ma):
     item = rows[0] if rows else None
     return render_template("loaisp_form.html", item=item)
 
+#===============Xóa Loại Sản Phẩm============
 @app.route("/loaisp/delete/<ma>", methods=["POST"])
 def loaisp_delete(ma):
     conn = get_connection()
@@ -108,6 +109,41 @@ def loaisp_delete(ma):
     cur.close(); conn.close()
     flash("Đã xóa loại sản phẩm", "warning")
     return redirect(url_for("loaisp_list"))
+
+#==================API======================
+@app.route("/api/loaisp", methods=["GET"])
+def api_check_loai():
+    ma_loai = request.args.get("MaLoai")
+
+    if not ma_loai:
+        return {"message": "Vui lòng cung cấp MaLoai"}, 400
+
+    try:
+        ma_loai = int(ma_loai)
+    except:
+        return {"message": "MaLoai phải là số"}, 400
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Lấy loại bánh trực tiếp từ DB (dynamic)
+    cur.execute("""
+        SELECT TenLoai
+        FROM LOAISANPHAM_        
+        WHERE MaLoai = ?
+    """, (ma_loai,))
+
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if row:
+        ten_loai = row[0]
+        return {"message": f"Tìm thấy loại bánh: {ten_loai}"}
+
+    return {"message": "Không tìm thấy loại bánh trong database"}
+
 
 # ---------------- SAN PHAM ----------------
 
