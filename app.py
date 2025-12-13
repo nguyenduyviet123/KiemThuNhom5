@@ -50,33 +50,75 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from uuid import uuid4
 
 #===============Thêm Loại Sản phẩm===============
-@app.route("/loaisp/add", methods=["GET","POST"])
+@app.route("/loaisp/add", methods=["GET", "POST"])
 def loaisp_add():
     if request.method == "POST":
-        # Lấy dữ liệu từ form hoặc tự sinh mã
-        ma = request.form.get("MaLoai") or str(uuid4())[:8]  
-        ten = request.form.get("TenLoai")
-        
+
+        # 👉 Phân biệt request JSON (Postman) hay Form (HTML)
+        is_json = request.is_json
+
+        if is_json:
+            data = request.get_json()
+            ma = data.get("MaLoai") or str(uuid4())[:8]
+            ten = data.get("TenLoai")
+        else:
+            ma = request.form.get("MaLoai") or str(uuid4())[:8]
+            ten = request.form.get("TenLoai")
+
+        if not ten:
+            if is_json:
+                return jsonify({
+                    "status": "error",
+                    "message": "Thiếu tên loại sản phẩm"
+                }), 400
+            else:
+                flash("Thiếu tên loại sản phẩm", "danger")
+                return redirect(url_for("loaisp_add"))
+
         conn = get_connection()
         cur = conn.cursor()
 
-        # ✅ KIỂM TRA TRÙNG MÃ LOẠI SẢN PHẨM
-        cur.execute("SELECT MaLoai FROM LOAISANPHAM_ WHERE MaLoai = ?", (ma,))
+        # ✅ KIỂM TRA TRÙNG MÃ LOẠI
+        cur.execute(
+            "SELECT MaLoai FROM LOAISANPHAM_ WHERE MaLoai = ?",
+            (ma,)
+        )
         exists = cur.fetchone()
+
         if exists:
             cur.close()
             conn.close()
-            flash(f"Mã loại sản phẩm {ma} đã tồn tại! Vui lòng nhập mã khác.", "danger")
-            return redirect(url_for("loaisp_add"))  # quay lại form thêm
-        
-        # Thêm loại sản phẩm mới
-        cur.execute("INSERT INTO LOAISANPHAM_ (MaLoai, TenLoai) VALUES (?, ?)", (ma, ten))
+
+            if is_json:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Mã loại {ma} đã tồn tại"
+                }), 400
+            else:
+                flash(f"Mã loại sản phẩm {ma} đã tồn tại! Vui lòng nhập mã khác.", "danger")
+                return redirect(url_for("loaisp_add"))
+
+        # ✅ INSERT
+        cur.execute(
+            "INSERT INTO LOAISANPHAM_ (MaLoai, TenLoai) VALUES (?, ?)",
+            (ma, ten)
+        )
         conn.commit()
         cur.close()
         conn.close()
 
-        flash("Thêm loại sản phẩm thành công", "success")
-        return redirect(url_for("loaisp_list"))
+        if is_json:
+            return jsonify({
+                "status": "success",
+                "message": "Thêm loại sản phẩm thành công",
+                "data": {
+                    "MaLoai": ma,
+                    "TenLoai": ten
+                }
+            }), 200
+        else:
+            flash("Thêm loại sản phẩm thành công", "success")
+            return redirect(url_for("loaisp_list"))
 
     # GET request: hiển thị form
     return render_template("loaisp_form.html", item=None)
@@ -245,38 +287,126 @@ def sanpham_add():
 
 
 #=============Sửa sản phẩm================
-@app.route("/sanpham/edit/<ma>", methods=["GET", "POST"])
-def sanpham_edit(ma):
-    conn = get_connection()
-    cur = conn.cursor()
+# --- HÀM SỬA SẢN PHẨM (ĐÃ NÂNG CẤP VALIDATION) ---
+@app.route("/api/sanpham/edit/<ma>", methods=["POST"])
+@app.route("/sanpham/edit/<ma>", methods=["GET", "POST"], endpoint='sanpham_edit')
+def sanpham_edit_hybrid(ma):
+    conn = None
+    cur = None
+    is_api = request.path.startswith('/api/')
 
-    if request.method == "POST":
-        ten = request.form.get("TenSP_")
-        dongia = request.form.get("DonGia") or 0
-        giacu = request.form.get("GiaCu") or 0
-        mota = request.form.get("MoTa")
-        anh = request.form.get("Anh")
-        maloai = request.form.get("MaLoai")
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
 
-        cur.execute("""
-            UPDATE SANPHAM 
-            SET TenSP_=?, DonGia=?, GiaCu=?, MoTa=?, Anh=?, MaLoai=?, ThoiGianCapNhat=GETDATE()
-            WHERE MaSP = ?
-        """, ten, dongia, giacu, mota, anh, maloai, ma)
-        conn.commit()
+        if request.method == "POST":
+            # 1. Lấy dữ liệu
+            if request.is_json:
+                data = request.json
+                ten = data.get("TenSP_")
+                raw_dongia = data.get("DonGia")
+                giacu = data.get("GiaCu", 0)
+                mota = data.get("MoTa")
+                anh = data.get("Anh")
+                maloai = data.get("MaLoai")
+            else:
+                ten = request.form.get("TenSP_")
+                raw_dongia = request.form.get("DonGia")
+                giacu = request.form.get("GiaCu") or 0
+                mota = request.form.get("MoTa")
+                anh = request.form.get("Anh")
+                maloai = request.form.get("MaLoai")
 
-        cur.close(); conn.close()
-        flash("Cập nhật sản phẩm thành công", "success")
-        return redirect(url_for("sanpham_list"))
+            # --- KIỂM TRA 1: TÊN KHÔNG ĐƯỢC ĐỂ TRỐNG (MỚI THÊM) ---
+            if not ten or str(ten).strip() == "":
+                msg = "Tên không được để trống"
+                if is_api: return jsonify({"status": "error", "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("sanpham_edit", ma=ma))
 
-    # Lấy dữ liệu sản phẩm để hiển thị lên form
-    cur.execute("SELECT * FROM SANPHAM WHERE MaSP = ?", ma)
-    rows = rows_to_dicts(cur)
-    cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
-    loai = rows_to_dicts(cur)
-    cur.close(); conn.close()
-    item = rows[0] if rows else None
-    return render_template("sanpham_form.html", item=item, loai=loai)
+            # --- KIỂM TRA 2: GIÁ PHẢI LÀ SỐ (SỬA LOGIC) ---
+            dongia = 0
+            try:
+                # Cố gắng ép kiểu sang số
+                if raw_dongia:
+                    dongia = float(str(raw_dongia).replace(',', '').strip())
+                else:
+                    dongia = 0 # Nếu bỏ trống giá thì cho là 0 (hoặc báo lỗi tùy bạn)
+            except ValueError:
+                # NẾU NHẬP CHỮ (abc) -> SẼ NHẢY VÀO ĐÂY -> BÁO LỖI NGAY
+                msg = "Đơn giá phải là số hợp lệ (không được nhập chữ)"
+                if is_api: return jsonify({"status": "error", "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("sanpham_edit", ma=ma))
+            
+            # --- KIỂM TRA 3: GIÁ KHÔNG ĐƯỢC ÂM ---
+            if dongia < 0:
+                msg = "Giá không được nhỏ hơn 0"
+                if is_api: return jsonify({"status": "error", "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("sanpham_edit", ma=ma))
+            # ... (Các đoạn kiểm tra Validation ở trên giữ nguyên) ...
+            
+            # --- VALIDATION 3: KIỂM TRA MÃ LOẠI TỒN TẠI (MỚI) ---
+            # Lưu ý: Chỉ kiểm tra nếu người dùng có gửi maloai lên
+            if maloai:
+                # Kiểm tra trong bảng LOAISANPHAM_ xem có ID này không
+                cur.execute("SELECT COUNT(*) FROM LOAISANPHAM_ WHERE MaLoai = ?", maloai)
+                count = cur.fetchone()[0]
+                if count == 0:
+                    msg = f"Loại sản phẩm (Mã {maloai}) không tồn tại"
+                    if is_api: return jsonify({"status": "error", "message": msg}), 400
+                    flash(msg, "danger")
+                    return redirect(url_for("sanpham_edit", ma=ma))
+            # 4. Update Database (Nếu vượt qua 3 ải trên)
+            cur.execute("""
+                UPDATE SANPHAM 
+                SET TenSP_=?, DonGia=?, GiaCu=?, MoTa=?, Anh=?, MaLoai=?, ThoiGianCapNhat=GETDATE()
+                WHERE MaSP = ?
+            """, ten, dongia, giacu, mota, anh, maloai, ma)
+            
+            # --- THÊM ĐOẠN KIỂM TRA NÀY VÀO ---
+            if cur.rowcount == 0:
+                # Nếu không tìm thấy dòng nào để sửa -> Báo lỗi 404 (Not Found)
+                msg = f"Không tìm thấy sản phẩm có mã {ma}"
+                if is_api: return jsonify({"status": "error", "message": msg}), 404
+                flash(msg, "warning")
+                return redirect(url_for("sanpham_list"))
+            # ------------------------------------
+
+            conn.commit()
+
+            # 5. Trả về kết quả thành công (Giữ nguyên)
+            if is_api:
+                return jsonify({
+                    "status": "success", 
+                    "message": "Cập nhật thành công",
+                    "data": {"MaSP": ma, "TenSP": ten, "DonGia": dongia}
+                }), 200
+            
+            flash("Cập nhật thành công", "success")
+            return redirect(url_for("sanpham_list"))
+
+        # --- PHẦN GET (HIỂN THỊ FORM) ---
+        cur.execute("SELECT * FROM SANPHAM WHERE MaSP = ?", ma)
+        rows = rows_to_dicts(cur)
+        cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
+        loai = rows_to_dicts(cur)
+
+        item = rows[0] if rows else None
+        return render_template("sanpham_form.html", item=item, loai=loai)
+
+    except Exception as e:
+        if is_api: return jsonify({"status": "error", "message": str(e)}), 500
+        return f"Lỗi hệ thống: {str(e)}", 500
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+
+
+
+
 
 
 #=============Xóa sản phẩm==================
@@ -602,7 +732,17 @@ def api_search_sanpham():
     cur.close()
     conn.close()
 
+    # ✅ KHÔNG TÌM THẤY → TRẢ MẢNG CÓ THÔNG BÁO
+    if not rows:
+        return jsonify([
+            {
+                "message": "Không có sản phẩm này"
+            }
+        ]), 200
+
+    # ✅ CÓ SẢN PHẨM
     return jsonify(rows), 200
+
 
 
 
