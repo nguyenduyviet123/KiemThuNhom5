@@ -2,8 +2,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from db import get_connection
 import pyodbc
-from flask import jsonify
+import time
+from flask import request, jsonify
 from uuid import uuid4
+from datetime import datetime, timedelta
+from flask import Response
+import threading
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -200,7 +205,7 @@ def sanpham_add():
         flash("Thêm sản phẩm thành công", "success")
         return redirect(url_for("sanpham_list"))
     
-    
+
 
 
 #=============Sửa sản phẩm================
@@ -238,63 +243,167 @@ def sanpham_edit(ma):
     return render_template("sanpham_form.html", item=item, loai=loai)
 
 
-@app.route("/sanpham/delete/<ma>", methods=["POST"])
+#=============Xóa sản phẩm==================
+
+@app.route("/sanpham/delete/<ma>", methods=["POST"])  #Chuyển vào thùng rác
 def sanpham_delete(ma):
     conn = get_connection()
     cur = conn.cursor()
-    
-    # Chuyển sản phẩm vào thùng rác
+
+    # 🔍 1) Kiểm tra sản phẩm có tồn tại không
+    cur.execute("SELECT MaSP, TrangThai FROM SANPHAM WHERE MaSP = ?", (ma,))
+    row = cur.fetchone()
+
+    if not row:
+        # ❌ Không tìm thấy
+        if request.is_json:
+            return jsonify({
+                "success": False,
+                "message": f"Không tìm thấy sản phẩm có mã {ma}"
+            }), 404
+
+        flash(f"Không tìm thấy sản phẩm có mã {ma}", "danger")
+        return redirect(url_for("sanpham_list"))
+
+    MaSP, TrangThai = row
+
+    # 🔴 2) Nếu sản phẩm ĐÃ nằm trong thùng rác → báo lỗi
+    if TrangThai == 0:
+        if request.is_json:
+            return jsonify({
+                "success": False,
+                "message": f"Sản phẩm mã {ma} đã ở trong thùng rác"
+            }), 400
+
+        flash(f"Sản phẩm mã {ma} đã ở trong thùng rác!", "warning")
+        return redirect(url_for("sanpham_list"))
+
+    # 🟦 3) Xóa mềm (đưa vào thùng rác)
     cur.execute("""
-        UPDATE SANPHAM SET TrangThai = 0 WHERE MaSP = ?
-    """, ma)
-    
+        UPDATE SANPHAM
+        SET TrangThai = 0, NgayXoa = ?
+        WHERE MaSP = ?
+    """, (datetime.now(), ma))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    # JSON response
+    if request.is_json:
+        return jsonify({
+            "success": True,
+            "message": f"Đã chuyển sản phẩm mã {ma} vào thùng rác"
+        })
+
+    flash(f"Đã chuyển sản phẩm mã {ma} vào thùng rác!", "success")
+    return redirect(url_for("sanpham_list"))
+
+@app.route("/sanpham/delete_permanent/<ma>", methods=["POST", "DELETE"]) # Xóa vĩnh viễn
+def delete_permanent(ma):
+    is_api = request.method == "DELETE" or request.is_json
+
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM SANPHAM WHERE MaSP = ?", (ma,))
+    deleted = cur.rowcount
     conn.commit()
     cur.close(); conn.close()
-    
-    flash("Sản phẩm đã được chuyển vào thùng rác", "warning")
-    return redirect(url_for("sanpham_list"))
+
+    if deleted == 0:
+        if is_api:
+            return jsonify({"success": False, "message": f"Không tìm thấy sản phẩm {ma}"}), 404
+        flash(f"Không tìm thấy sản phẩm {ma}", "danger")
+        return redirect(url_for("sanpham_trash"))
+
+    # API trả JSON
+    if is_api:
+        return jsonify({"success": True, "message": f"Đã xóa vĩnh viễn sản phẩm {ma}"}), 200
+
+    # Web POST → flash + redirect
+    flash(f"Đã xóa vĩnh viễn sản phẩm {ma}", "success")
+    return redirect(url_for("sanpham_trash"))
+
+
+#================Tu dong xoa================
+
+def auto_delete_old_items():
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM SANPHAM
+        WHERE TrangThai = 0 AND NgayXoa <= DATEADD(day, -30, GETDATE())
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(auto_delete_old_items, 'interval', hours = 24)
+    scheduler.start()
+
+start_scheduler()
+
 
 # thùng rác
 @app.route("/sanpham/trash")
 def sanpham_trash():
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT s.MaSP, s.TenSP_, s.DonGia, s.Anh, l.TenLoai
-        FROM SANPHAM s
-        LEFT JOIN LOAISANPHAM_ l ON s.MaLoai = l.MaLoai
-        WHERE s.TrangThai = 0
-        ORDER BY s.MaSP
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT sp.MaSP, sp.TenSP_, sp.Anh, sp.NgayXoa, l.TenLoai
+        FROM SANPHAM sp
+        LEFT JOIN LOAISANPHAM_ l ON sp.MaLoai = l.MaLoai
+        WHERE sp.TrangThai = 0 AND sp.NgayXoa IS NOT NULL
     """)
-    items = rows_to_dicts(cur)
-    cur.close(); conn.close()
+
+    rows = cursor.fetchall()
+    columns = [col[0] for col in cursor.description]
+    items = [dict(zip(columns, row)) for row in rows]
+
+    for p in items:
+        ngay_xoa = p.get("NgayXoa")
+
+        if ngay_xoa:
+            expire_date = ngay_xoa + timedelta(days=30)
+            days_left = (expire_date - datetime.now()).days
+
+            if days_left >= 0:
+                p["time_left"] = f"Còn {days_left} ngày"
+            else:
+                p["time_left"] = "Đang chờ hệ thống xóa"
+        else:
+            p["time_left"] = "Không xác định"
+
+    cursor.close()
+    conn.close()
+
     return render_template("sanpham_trash.html", items=items)
 
+
+#=============Khôi phục dữ liệu==============
 @app.route("/sanpham/restore/<ma>", methods=["POST"])
 def sanpham_restore(ma):
     conn = get_connection()
     cur = conn.cursor()
-    
+
     cur.execute("""
-        UPDATE SANPHAM SET TrangThai = 1 WHERE MaSP = ?
+        UPDATE SANPHAM 
+        SET TrangThai = 1, NgayXoa = NULL
+        WHERE MaSP = ?
     """, ma)
-    
+
     conn.commit()
     cur.close(); conn.close()
     flash("Khôi phục sản phẩm thành công!", "success")
     return redirect(url_for("sanpham_trash"))
 
-@app.route("/sanpham/delete_permanent/<ma>", methods=["POST"])
-def sanpham_delete_permanent(ma):
-    conn = get_connection()
-    cur = conn.cursor()
-    
-    cur.execute("DELETE FROM SANPHAM WHERE MaSP = ?", ma)
-    
-    conn.commit()
-    cur.close(); conn.close()
-    flash("Đã xóa sản phẩm vĩnh viễn!", "danger")
-    return redirect(url_for("sanpham_trash"))
+
 
 
 

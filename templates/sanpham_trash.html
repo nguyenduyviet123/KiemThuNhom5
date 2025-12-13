@@ -3,26 +3,39 @@
 <h2>🗑️ Thùng rác sản phẩm</h2>
 
 <table class="table">
-    <tr>
-        <th>Mã</th><th>Tên sản phẩm</th><th>Ảnh</th><th>Loại</th><th>Hành động</th>
-    </tr>
-
+    <thead>
+        <tr>
+            <th>Mã</th>
+            <th>Tên sản phẩm</th>
+            <th>Ảnh</th>
+            <th>Loại</th>
+            <th>Thời gian còn lại</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
     {% for p in items %}
-    <tr>
-        <td>{{ p.MaSP }}</td>
-        <td>{{ p.TenSP_ }}</td>
-        <td><img src="{{ p.Anh }}" width="60"></td>
-        <td>{{ p.TenLoai }}</td>
-        <td>
-            <form action="{{ url_for('sanpham_restore', ma=p.MaSP) }}" method="post" style="display:inline;">
-                <button class="btn btn-success">Khôi phục</button>
+        <tr id="row-{{ p.MaSP }}">
+            <td>{{ p.MaSP }}</td>
+            <td>{{ p.TenSP_ }}</td>
+            <td><img src="{{ p.Anh }}" width="60"></td>
+            <td>{{ p.TenLoai }}</td>
+            <td>{{ p.time_left }}</td>
+            <td>
+                <!-- Khôi phục bằng form POST -->
+                <form action="{{ url_for('sanpham_restore', ma=p.MaSP) }}" method="post" style="display:inline;">
+                    <button class="btn btn-success">Khôi phục</button>
+                </form>
+                <td>
+            <form action="{{ url_for('delete_permanent', ma=p.MaSP) }}" method="post">
+            <button class="btn btn-danger" onclick="return confirm('Xóa vĩnh viễn?')">Xóa vĩnh viễn</button>
             </form>
-
-            <form action="{{ url_for('sanpham_delete_permanent', ma=p.MaSP) }}" method="post" style="display:inline;">
-                <button class="btn btn-danger" onclick="return confirm('Xóa vĩnh viễn?')">Xóa vĩnh viễn</button>
-            </form>
-        </td>
-    </tr>
+            </td>
+        </tr>
     {% endfor %}
+    </tbody>
 </table>
+{% endblock %}
+
+{% block scripts %}
 {% endblock %}
