@@ -124,22 +124,63 @@ def loaisp_add():
     return render_template("loaisp_form.html", item=None)
 
 #=============Sửa Loại Sản Phẩm==============
-@app.route("/loaisp/edit/<ma>", methods=["GET","POST"])
+@app.route("/loaisp/edit/<ma>", methods=["GET", "POST", "PUT"])
 def loaisp_edit(ma):
     conn = get_connection()
     cur = conn.cursor()
-    if request.method == "POST":
-        ten = request.form.get("TenLoai")
-        cur.execute("UPDATE LOAISANPHAM_ SET TenLoai = ? WHERE MaLoai = ?", ten, ma)
+
+    # ================= API / FORM UPDATE =================
+    if request.method in ["POST", "PUT"]:
+        # phân biệt API hay web
+        is_api = request.is_json or request.method == "PUT"
+
+        if is_api:
+            data = request.get_json()
+            ten = data.get("TenLoai")
+        else:
+            ten = request.form.get("TenLoai")
+
+        # kiểm tra tồn tại
+        cur.execute("SELECT 1 FROM LOAISANPHAM_ WHERE MaLoai = ?", (ma,))
+        if not cur.fetchone():
+            cur.close(); conn.close()
+            if is_api:
+                return jsonify({
+                    "status": "error",
+                    "message": "Loại sản phẩm không tồn tại"
+                }), 404
+            flash("❌ Loại sản phẩm không tồn tại", "danger")
+            return redirect(url_for("loaisp_list"))
+
+        # cập nhật
+        cur.execute(
+            "UPDATE LOAISANPHAM_ SET TenLoai = ? WHERE MaLoai = ?",
+            (ten, ma)
+        )
         conn.commit()
         cur.close(); conn.close()
-        flash("Cập nhật thành công", "success")
+
+        if is_api:
+            return jsonify({
+                "status": "success",
+                "message": "Cập nhật thành công",
+                "MaLoai": ma,
+                "TenLoai": ten
+            })
+
+        flash("✅ Cập nhật thành công", "success")
         return redirect(url_for("loaisp_list"))
-    cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_ WHERE MaLoai = ?", ma)
+
+    # ================= GET (WEB) =================
+    cur.execute(
+        "SELECT MaLoai, TenLoai FROM LOAISANPHAM_ WHERE MaLoai = ?",
+        (ma,)
+    )
     rows = rows_to_dicts(cur)
     cur.close(); conn.close()
     item = rows[0] if rows else None
     return render_template("loaisp_form.html", item=item)
+
 
 #===============Xóa Loại Sản Phẩm============
 @app.route("/loaisp/delete/<ma>", methods=["POST", "DELETE"])
@@ -312,7 +353,7 @@ def sanpham_add():
 
     # Trả về tùy request
     if from_api:
-        return jsonify({"msg": "Thêm API thành công!"})
+        return jsonify({"msg": "Thêm sản phẩm mới thành công!"})
     else:
         flash("Thêm sản phẩm thành công", "success")
         return redirect(url_for("sanpham_list"))
