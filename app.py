@@ -828,13 +828,10 @@ def api_search_sanpham():
     cur.close()
     conn.close()
 
-    # ✅ KHÔNG TÌM THẤY → TRẢ MẢNG CÓ THÔNG BÁO
+    # ✅ KHÔNG TÌM THẤY → TRẢ MẢNG CÓ THÔNG BÁO Rỗng
     if not rows:
-        return jsonify([
-            {
-                "message": "Không có sản phẩm này"
-            }
-        ]), 200
+        return jsonify([]), 200
+
 
     # ✅ CÓ SẢN PHẨM
     return jsonify(rows), 200
