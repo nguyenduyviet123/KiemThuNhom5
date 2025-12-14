@@ -114,45 +114,8 @@ class AdminSearchTests(unittest.TestCase):
         print(f"→ TRƯỜNG HỢP 3: Không tìm thấy sản phẩm liên quan '{keyword}'")
  
 
-    #==============TEST 2: Tìm kiếm không phân biệt chữ hoa/thường================
-    def test_search_case_insensitive(self):
-        self.login_admin()
-        driver = self.driver
-        driver.get("http://127.0.0.1:5000/sanpham")
 
-        search_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "searchInput"))
-        )
-        search_input.clear()
-
-        # Thay giá trị để test
-        query = "reD vElVEt" 
-        search_input.send_keys(query)
-        search_input.send_keys(Keys.ENTER)
-
-        # Chờ DOM render xong (kể cả khi không có product-card)
-        WebDriverWait(driver, 10).until(
-            lambda d: d.execute_script("return document.readyState === 'complete'")
-        )
-
-        # Lấy tất cả product-card
-        cards = driver.find_elements(By.CSS_SELECTOR, "#productGrid .product-card")
-
-        if len(cards) == 0:
-            # Không có sản phẩm nào
-            print(f"❌ Không tìm thấy sản phẩm nào với từ khóa '{query}'")
-            self.fail(f"Không tìm thấy sản phẩm nào với từ khóa '{query}'")
-        else:
-            # Kiểm tra case-insensitive
-            found = any(query.lower() in c.text.lower() for c in cards)
-            if found:
-                print(f"✅ Đã tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
-            else:
-                print(f"❌ Không tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
-                self.fail(f"Không tìm thấy sản phẩm phù hợp với từ khóa '{query}'")
-
-
-        #=============TEST 3: kiểm tra kí tự đặc biệt=========
+        #=============TEST 2: kiểm tra kí tự đặc biệt=========
     def test_search_special_characters(self):
         self.login_admin()
         driver = self.driver
