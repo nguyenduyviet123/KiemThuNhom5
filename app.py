@@ -142,15 +142,49 @@ def loaisp_edit(ma):
     return render_template("loaisp_form.html", item=item)
 
 #===============Xóa Loại Sản Phẩm============
-@app.route("/loaisp/delete/<ma>", methods=["POST"])
+@app.route("/loaisp/delete/<ma>", methods=["POST", "DELETE"])
 def loaisp_delete(ma):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM LOAISANPHAM_ WHERE MaLoai = ?", ma)
+
+    # kiểm tra tồn tại
+    cur.execute("SELECT 1 FROM LOAISANPHAM_ WHERE MaLoai = ?", (ma,))
+    if not cur.fetchone():
+        cur.close(); conn.close()
+
+        # HTML
+        if request.method == "POST":
+            flash("❌ Loại sản phẩm không tồn tại", "danger")
+            return redirect(url_for("loaisp_list"))
+        # API
+        return jsonify({"status": "error", "message": "Loại sản phẩm không tồn tại"}), 404
+
+    # kiểm tra còn sản phẩm
+    cur.execute("SELECT COUNT(*) FROM SANPHAM WHERE MaLoai = ?", (ma,))
+    count = cur.fetchone()[0]
+
+    if count > 0:
+        cur.close(); conn.close()
+
+        if request.method == "POST":
+            flash(f"⚠️ Không thể xóa – còn {count} sản phẩm", "warning")
+            return redirect(url_for("loaisp_list"))
+        return jsonify({
+            "status": "error",
+            "message": f"Không thể xóa – còn {count} sản phẩm thuộc loại này",
+            "count": count
+        }), 400
+
+    # xóa
+    cur.execute("DELETE FROM LOAISANPHAM_ WHERE MaLoai = ?", (ma,))
     conn.commit()
     cur.close(); conn.close()
-    flash("Đã xóa loại sản phẩm", "warning")
-    return redirect(url_for("loaisp_list"))
+
+    if request.method == "POST":
+        flash("✅ Đã xóa loại sản phẩm", "success")
+        return redirect(url_for("loaisp_list"))
+
+    return jsonify({"status": "success", "message": "Xóa thành công"})
 
 #==================API======================
 @app.route("/api/loaisp", methods=["GET"])
@@ -305,7 +339,7 @@ def sanpham_edit_hybrid(ma):
                 data = request.json
                 ten = data.get("TenSP_")
                 raw_dongia = data.get("DonGia")
-                giacu = data.get("GiaCu", 0)
+                raw_giacu = data.get("GiaCu")
                 mota = data.get("MoTa")
                 anh = data.get("Anh")
                 maloai = data.get("MaLoai")
@@ -346,8 +380,29 @@ def sanpham_edit_hybrid(ma):
                 flash(msg, "danger")
                 return redirect(url_for("sanpham_edit", ma=ma))
             # ... (Các đoạn kiểm tra Validation ở trên giữ nguyên) ...
+            # --- VALIDATION 3: GIÁ CŨ (Số & Không âm) - MỚI THÊM ---
+            giacu = 0
+            try:
+                if raw_giacu:
+                    # Cố gắng ép kiểu sang số thực
+                    giacu = float(str(raw_giacu).replace(',', '').strip())
+                else:
+                    giacu = 0 
+            except ValueError:
+                # Nếu nhập "abc" -> Nhảy vào đây báo lỗi ngay
+                msg = "Giá cũ phải là số hợp lệ"
+                if is_api: return jsonify({"status": "error", "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("sanpham_edit", ma=ma))
             
-            # --- VALIDATION 3: KIỂM TRA MÃ LOẠI TỒN TẠI (MỚI) ---
+            # Kiểm tra số âm
+            if giacu < 0:
+                msg = "Giá cũ không được nhỏ hơn 0"
+                if is_api: return jsonify({"status": "error", "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("sanpham_edit", ma=ma))
+
+            # --- VALIDATION 4: KIỂM TRA MÃ LOẠI TỒN TẠI (MỚI) ---
             # Lưu ý: Chỉ kiểm tra nếu người dùng có gửi maloai lên
             if maloai:
                 # Kiểm tra trong bảng LOAISANPHAM_ xem có ID này không
@@ -403,7 +458,7 @@ def sanpham_edit_hybrid(ma):
         if cur: cur.close()
         if conn: conn.close()
 
-
+        
 
 
 
