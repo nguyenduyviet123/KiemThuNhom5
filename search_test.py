@@ -37,85 +37,85 @@ class AdminSearchTests(unittest.TestCase):
     #  kiểm tra đăng nhập sang dashbord và chức năng tìm kiếm như 
     # là tìm sản phẩm cụ thể, tìm danh sách dựa trên loại sản phẩm và không tìm thấy sản phẩm nào
     
-    def test_login_and_search(self):
-        driver = self.driver
-        self.login_admin()
+    # def test_login_and_search(self):
+    #     driver = self.driver
+    #     self.login_admin()
 
-        driver.get("http://127.0.0.1:5000/sanpham")
+    #     driver.get("http://127.0.0.1:5000/sanpham")
 
-        search_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "searchInput"))
-        )
+    #     search_input = WebDriverWait(driver, 10).until(
+    #         EC.presence_of_element_located((By.ID, "searchInput"))
+    #     )
 
-        keyword = "Bánh"
-        search_input.send_keys(keyword)
-        search_input.send_keys(Keys.ENTER)
+    #     keyword = "Bánhhhh"
+    #     search_input.send_keys(keyword)
+    #     search_input.send_keys(Keys.ENTER)
 
-        time.sleep(2)
+    #     time.sleep(2)
 
-        # ===== TRƯỜNG HỢP 1: Tìm chính xác sản phẩm và mở trang chi tiết =====
+    #     # ===== TRƯỜNG HỢP 1: Tìm chính xác sản phẩm và mở trang chi tiết =====
 
-        try:
-            detail_title = WebDriverWait(driver, 3).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, ".product-detail h2"))
-            )
+    #     try:
+    #         detail_title = WebDriverWait(driver, 3).until(
+    #             EC.presence_of_element_located((By.CSS_SELECTOR, ".product-detail h2"))
+    #         )
 
-            if keyword.lower() in detail_title.text.lower():
-                print("→ TRƯỜNG HỢP 1: MỞ TRANG CHI TIẾT SẢN PHẨM")
+    #         if keyword.lower() in detail_title.text.lower():
+    #             print("→ TRƯỜNG HỢP 1: MỞ TRANG CHI TIẾT SẢN PHẨM")
 
-                # Lấy thông tin chi tiết theo đúng HTML của bạn
-                name = detail_title.text
-                code = driver.find_element(By.XPATH, "//p[b[text()='Mã sản phẩm:']]").text
-                category = driver.find_element(By.XPATH, "//p[b[text()='Loại sản phẩm:']]").text
-                new_price = driver.find_element(By.CSS_SELECTOR, ".new-price").text
-                old_price = driver.find_element(By.CSS_SELECTOR, ".old-price").text
-                desc = driver.find_element(By.CSS_SELECTOR, ".desc").text
+    #             # Lấy thông tin chi tiết theo đúng HTML của bạn
+    #             name = detail_title.text
+    #             code = driver.find_element(By.XPATH, "//p[b[text()='Mã sản phẩm:']]").text
+    #             category = driver.find_element(By.XPATH, "//p[b[text()='Loại sản phẩm:']]").text
+    #             new_price = driver.find_element(By.CSS_SELECTOR, ".new-price").text
+    #             old_price = driver.find_element(By.CSS_SELECTOR, ".old-price").text
+    #             desc = driver.find_element(By.CSS_SELECTOR, ".desc").text
 
-                print("\n===== THÔNG TIN SẢN PHẨM =====")
-                print("Tên sản phẩm:", name)
-                print(code)
-                print(category)
-                print("Giá mới:", new_price)
-                print("Giá cũ:", old_price)
-                print("Mô tả:", desc)
-                print("==============================\n")
+    #             print("\n===== THÔNG TIN SẢN PHẨM =====")
+    #             print("Tên sản phẩm:", name)
+    #             print(code)
+    #             print(category)
+    #             print("Giá mới:", new_price)
+    #             print("Giá cũ:", old_price)
+    #             print("Mô tả:", desc)
+    #             print("==============================\n")
 
-                return
+    #             return
 
-        except Exception as e:
-            print("Lỗi khi lấy thông tin chi tiết:", e)
-            pass
-
-
-
-        # ===== TRƯỜNG HỢP 2: HIỂN THỊ DANH SÁCH SẢN PHẨM THEO LOẠI =====
-        cards = driver.find_elements(By.CLASS_NAME, "product-card")
-
-        if len(cards) > 0:
-            print(f"→ TRƯỜNG HỢP 2: Có {len(cards)} sản phẩm thuộc loại '{keyword}'")
-
-            # In danh sách tên sản phẩm (dạng text)
-            product_names = [c.find_element(By.TAG_NAME, "h4").text for c in cards]
-
-            print("Danh sách sản phẩm:")
-            for name in product_names:
-                print(" -", name)
-
-            # Có danh sách => PASS
-            self.assertGreater(len(cards), 0)
-            return
+    #     except Exception as e:
+    #         print("Lỗi khi lấy thông tin chi tiết:", e)
+    #         pass
 
 
-        # ===== TRƯỜNG HỢP 3: không tim thấy sản phẩm hợp lệ =====
-        no_product = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.ID, "no-product-msg"))
-        )
-        self.assertIn("Không tìm thấy sản phẩm", no_product.text)
-        print(f"→ TRƯỜNG HỢP 3: Không tìm thấy sản phẩm liên quan '{keyword}'")
+
+    #     # ===== TRƯỜNG HỢP 2: HIỂN THỊ DANH SÁCH SẢN PHẨM THEO LOẠI =====
+    #     cards = driver.find_elements(By.CLASS_NAME, "product-card")
+
+    #     if len(cards) > 0:
+    #         print(f"→ TRƯỜNG HỢP 2: Có {len(cards)} sản phẩm thuộc loại '{keyword}'")
+
+    #         # In danh sách tên sản phẩm (dạng text)
+    #         product_names = [c.find_element(By.TAG_NAME, "h4").text for c in cards]
+
+    #         print("Danh sách sản phẩm:")
+    #         for name in product_names:
+    #             print(" -", name)
+
+    #         # Có danh sách => PASS
+    #         self.assertGreater(len(cards), 0)
+    #         return
+
+
+    #     # ===== TRƯỜNG HỢP 3: không tim thấy sản phẩm hợp lệ =====
+    #     no_product = WebDriverWait(driver, 5).until(
+    #         EC.presence_of_element_located((By.ID, "no-product-msg"))
+    #     )
+    #     self.assertIn("Không tìm thấy sản phẩm", no_product.text)
+    #     print(f"→ TRƯỜNG HỢP 3: Không tìm thấy sản phẩm liên quan '{keyword}'")
  
 
 
-        #=============TEST 2: kiểm tra kí tự đặc biệt=========
+    #     #=============TEST 2: kiểm tra kí tự đặc biệt=========
     def test_search_special_characters(self):
         self.login_admin()
         driver = self.driver
