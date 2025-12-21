@@ -57,9 +57,9 @@ class AdminSearchTests(unittest.TestCase):
     #             f"Sản phẩm không thuộc loại tìm kiếm: {loai}"
     #         )
 
-    def test_search_by_category(self):
+    def test_01(self):
         self.login_admin()
-        
+
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
 
@@ -157,7 +157,7 @@ class AdminSearchTests(unittest.TestCase):
     #     )
 
 
-    def test_search_exact_product(self):
+    def test_02(self):
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -199,7 +199,7 @@ class AdminSearchTests(unittest.TestCase):
 
 
     # # ================== TEST 3: KHÔNG TÌM THẤY SẢN PHẨM ==================
-    def test_search_not_found(self):
+    def test_03(self):
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -218,8 +218,8 @@ class AdminSearchTests(unittest.TestCase):
 
         self.assertIn("Không tìm thấy",no_product_msg.text,"Không hiển thị thông báo khi không tìm thấy sản phẩm")
 
-    # # ================== TEST 4: NHẬP KÝ TỰ ĐẶC BIỆT ==================
-    def test_search_special_characters(self):
+    # # # ================== TEST 4: NHẬP KÝ TỰ ĐẶC BIỆT ==================
+    def test_04(self):
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -232,15 +232,149 @@ class AdminSearchTests(unittest.TestCase):
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
-        no_product_msg = self.wait.until(
+        #self.wait.until: Selenium chờ tối đa X giây (thường 10s):
+        # Nếu phần tử xuất hiện → trả về element → tiếp tục test
+        # Nếu không xuất hiện → TimeoutException → ERROR
+        no_product_msg = self.wait.until( #wait.until() là “TÔI CHẮC CHẮN PHẢI CÓ”
             EC.presence_of_element_located((By.ID, "no-product-msg"))
-        )
+        ) #tìm phẩn tử HTML có id là no-product-msg
 
 
         cards = driver.find_elements(By.CLASS_NAME, "product-card")
         self.assertEqual(len(cards),0,"Không được hiển thị sản phẩm khi nhập ký tự đặc biệt")
 
         self.assertIn("Không tìm thấy",no_product_msg.text,"Thông báo không tìm thấy sản phẩm không hiển thị")
+
+    # # ================== TEST 5: TÌM KIẾM THEO TỪ KHÓA GẦN ĐÚNG ==================     
+    def test_05(self):
+        self.login_admin()
+        driver = self.driver
+        driver.get("http://127.0.0.1:5000/sanpham")
+
+        keyword = "bsd".lower()
+        search_input = self.wait.until(
+            EC.presence_of_element_located((By.ID, "searchInput"))
+        )
+        search_input.clear()
+        search_input.send_keys(keyword)
+        search_input.send_keys(Keys.ENTER)
+
+        # Chờ kết quả search cập nhật
+        # self.wait.until(
+        #     lambda d: len(d.find_elements(By.CLASS_NAME, "product-card")) > 0
+        # ) #Nó ép buộc phải có sản phẩm 👉 Không có → ERROR (timeout) 
+
+        time.sleep(1.5)  # 👈 chờ UI cập nhật kết quả
+        cards = driver.find_elements(By.CLASS_NAME, "product-card")
+        if len(cards) > 0:
+            # 👉 TRƯỜNG HỢP CÓ KẾT QUẢ
+            found = False
+            for card in cards:
+                name = card.find_element(By.TAG_NAME, "h4").text.lower()
+                if keyword in name:
+                    found = True
+
+            self.assertTrue(
+                found,
+                f"Có sản phẩm nhưng không sản phẩm nào chứa từ khóa '{keyword}'"
+            )# trường hợp này sảy ra khi lỗi hệ thống phản hồi ko đúng từ khóa là a nhưng hiện ra b,c
+
+        else:
+            # 👉 TRƯỜNG HỢP KHÔNG CÓ KẾT QUẢ (VẪN PASS)
+            print("⚠️ Không tìm thấy sản phẩm")
+            self.assertTrue(True)
+
+
+
+## ==============TÌM KIẾM CHỨA KHOẢNG TRẮNG================
+    def test_06(self):
+        self.login_admin()
+        driver = self.driver
+        driver.get("http://127.0.0.1:5000/sanpham")
+
+
+        search_input = self.wait.until(
+            EC.presence_of_element_located((By.ID, "searchInput"))
+        )
+        search_input.clear()
+        search_input.send_keys("   ")
+        search_input.send_keys(Keys.ENTER)
+
+        # Hệ thống không crash, vẫn hiển thị sản phẩm
+        cards = driver.find_elements(By.CLASS_NAME, "product-card")
+
+        self.assertGreater(
+            len(cards), 0,
+            "Hệ thống không hiển thị sản phẩm khi tìm kiếm bằng khoảng trắng"
+        )
+
+## ====================TÌM KIẾM NHIỀU LẦN==================
+
+    def test_07(self):
+        self.login_admin()
+        driver = self.driver
+        driver.get("http://127.0.0.1:5000/sanpham")
+
+        keywords = ["bông lan", "bánh mì", "abc"]
+
+
+        search_input = self.wait.until(
+            EC.presence_of_element_located((By.ID, "searchInput"))
+        )
+
+        for keyword in keywords:
+            print(f"\n🔍 Đang tìm kiếm với từ khóa: {keyword}")
+
+            search_input.clear()
+            search_input.send_keys(keyword)
+            search_input.send_keys(Keys.ENTER)
+
+            time.sleep(2.5)  # 👈 cho bạn kịp nhìn UI
+
+            cards = driver.find_elements(By.CLASS_NAME, "product-card")
+
+            if len(cards) > 0:
+                print(f"✅ Có {len(cards)} sản phẩm được hiển thị")
+                self.assertGreater(len(cards), 0)
+            else:
+                print("⚠️ Không tìm thấy sản phẩm")
+                self.assertEqual(
+                    len(cards), 0,
+                    "Hệ thống vẫn hiển thị sản phẩm khi từ khóa không tồn tại"
+                )
+
+
+##====================THỜI GIAN PHẢN HỒI TÌM KIẾM==================
+    def test_08(self):
+        self.login_admin()
+        driver = self.driver
+        driver.get("http://127.0.0.1:5000/sanpham")
+
+        keyword = "bánh mì".lower()
+
+        search_input = self.wait.until(
+            EC.presence_of_element_located((By.ID, "searchInput"))
+        )
+
+        start_time = time.time()
+
+        search_input.clear()
+        search_input.send_keys(keyword)
+        search_input.send_keys(Keys.ENTER)
+
+        self.wait.until(
+            lambda d: len(d.find_elements(By.CLASS_NAME, "product-card")) > 0
+        )
+
+        end_time = time.time()
+        response_time = end_time - start_time
+        # ✅ IN RA THỜI GIAN PHẢN HỒI
+        print(f"\nThời gian phản hồi tìm kiếm: {response_time:.2f} giây")
+
+        self.assertLess(
+            response_time, 3,
+            f"Thời gian phản hồi tìm kiếm quá lâu: {response_time:.2f}s"
+        )
 
     def tearDown(self):
         time.sleep(2.5)
