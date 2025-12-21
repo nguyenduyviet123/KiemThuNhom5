@@ -31,6 +31,10 @@
     <img src="{{ p.Anh or url_for('static', filename='img/noimage.png') }}" alt="{{ p.TenSP_ }}">
     <div class="product-info">
       <h4>{{ p.TenSP_ }}</h4>
+      <p class="category">
+        <!--Thêm loại-->
+        Loại: {{ p.TenLoai or p.MaLoai }}
+      </p>
       <p class="price">{{ "{:,.0f}".format(p.DonGia) }} đ</p>
 
       <!-- 🕓 Hiển thị thời gian cập nhật -->
@@ -269,15 +273,12 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         suggestBox.style.display = "none";
 
-        fetch(`/api/search_sanpham?q=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.length === 1) {
-                    window.location.href = `/sanpham/view/${data[0].MaSP.trim()}`;
-                } else {
-                    renderProducts(data);
-                }
-            });
+      fetch(`/api/search_sanpham?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            renderProducts(data);   // ← LUÔN render danh sách
+        });
+
     });
 
     // ====== CLICK RA NGOÀI → ẨN GỢI Ý ======

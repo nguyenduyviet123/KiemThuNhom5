@@ -387,7 +387,7 @@ def sanpham_edit_hybrid(ma):
             else:
                 ten = request.form.get("TenSP_")
                 raw_dongia = request.form.get("DonGia")
-                giacu = request.form.get("GiaCu") or 0
+                raw_giacu = request.form.get("GiaCu") or 0
                 mota = request.form.get("MoTa")
                 anh = request.form.get("Anh")
                 maloai = request.form.get("MaLoai")
@@ -955,7 +955,7 @@ def dangnhap():
 
         if user:
             role = user[2].lower()
-            if role == "admin":
+            if role == "employee":
                 return redirect(url_for("index"))   # Dashboard
             else:
                 return redirect(url_for("home"))    # Trang người dùng
