@@ -286,79 +286,137 @@ def sanpham_list():
 
         #=============Thêm sản phẩm================
 
+# @app.route("/sanpham/add", methods=["GET", "POST"])
+# def sanpham_add():
+#     conn = get_connection()
+#     cur = conn.cursor()
+
+#     # Nếu GET → trả form
+#     if request.method == "GET":
+#         cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
+#         loai = rows_to_dicts(cur)
+#         cur.close()
+#         conn.close()
+#         return render_template("sanpham_form.html", item=None, loai=loai)
+
+#     # Nếu POST → JSON (API) hoặc FORM (Web)
+#     if request.is_json:
+#         data = request.get_json()
+#         ma = data.get("MaSP")
+#         ten = data.get("TenSP")
+#         dongia = data.get("DonGia")
+#         giacu = data.get("GiaCu", 0)
+#         mota = data.get("MoTa", "")
+#         anh = data.get("Anh", "")
+#         maloai = data.get("MaLoai", "")
+#         from_api = True
+#     else:
+#         ma = request.form.get("MaSP") or str(uuid4())[:8]
+#         ten = request.form.get("TenSP_")
+#         dongia = request.form.get("DonGia") or 0
+#         giacu = request.form.get("GiaCu") or 0
+#         mota = request.form.get("MoTa")
+#         anh = request.form.get("Anh")
+#         maloai = request.form.get("MaLoai")
+#         from_api = False
+
+#     # ❗ KIỂM TRA TÊN SẢN PHẨM TRỐNG
+#     if not ten or ten.strip() == "":
+#         if from_api:
+#             return jsonify({"error": "Tên sản phẩm không được để trống!"}), 400
+#         else:
+#             flash("Tên sản phẩm không được để trống!", "danger")
+#             cur.close()
+#             conn.close()
+#             return redirect(url_for("sanpham_add"))
+
+#     # KIỂM TRA TRÙNG MÃ
+#     cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
+#     if cur.fetchone():
+#         cur.close()
+#         conn.close()
+#         if from_api:
+#             return jsonify({"error": f"Mã sản phẩm {ma} đã tồn tại!"}), 400
+#         else:
+#             flash(f"Mã sản phẩm {ma} đã tồn tại!", "danger")
+#             return redirect(url_for("sanpham_add"))
+
+#     # INSERT
+#     cur.execute("""
+#         INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai, ThoiGianCapNhat)
+#         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
+#     """, ma, ten, dongia, giacu, mota, anh, maloai)
+#     conn.commit()
+
+#     cur.close()
+#     conn.close()
+
+#     # Trả về tùy request
+#     if from_api:
+#         return jsonify({"msg": "Thêm sản phẩm mới thành công!"})
+#     else:
+#         flash("Thêm sản phẩm thành công", "success")
+#         return redirect(url_for("sanpham_list"))
+    
 @app.route("/sanpham/add", methods=["GET", "POST"])
 def sanpham_add():
     conn = get_connection()
     cur = conn.cursor()
 
-    # Nếu GET → trả form
+    cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
+    loai = rows_to_dicts(cur)
+
     if request.method == "GET":
-        cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
-        loai = rows_to_dicts(cur)
         cur.close()
         conn.close()
         return render_template("sanpham_form.html", item=None, loai=loai)
 
-    # Nếu POST → JSON (API) hoặc FORM (Web)
-    if request.is_json:
-        data = request.get_json()
-        ma = data.get("MaSP")
-        ten = data.get("TenSP")
-        dongia = data.get("DonGia")
-        giacu = data.get("GiaCu", 0)
-        mota = data.get("MoTa", "")
-        anh = data.get("Anh", "")
-        maloai = data.get("MaLoai", "")
-        from_api = True
-    else:
-        ma = request.form.get("MaSP") or str(uuid4())[:8]
-        ten = request.form.get("TenSP_")
-        dongia = request.form.get("DonGia") or 0
-        giacu = request.form.get("GiaCu") or 0
-        mota = request.form.get("MoTa")
-        anh = request.form.get("Anh")
-        maloai = request.form.get("MaLoai")
-        from_api = False
+    # POST
+    ma = request.form.get("MaSP") or str(uuid4())[:8]
+    ten = request.form.get("TenSP_")
+    dongia = request.form.get("DonGia") or 0
+    mota = request.form.get("MoTa")
+    anh = request.form.get("Anh")
+    maloai = request.form.get("MaLoai")
 
-    # ❗ KIỂM TRA TÊN SẢN PHẨM TRỐNG
+    # ❌ VALIDATE
     if not ten or ten.strip() == "":
-        if from_api:
-            return jsonify({"error": "Tên sản phẩm không được để trống!"}), 400
-        else:
-            flash("Tên sản phẩm không được để trống!", "danger")
-            cur.close()
-            conn.close()
-            return redirect(url_for("sanpham_add"))
+        flash("Tên sản phẩm không được để trống!", "danger")
+        return redirect(url_for("sanpham_add"))
 
-    # KIỂM TRA TRÙNG MÃ
+    if int(dongia) < 0:
+        flash("Đơn giá phải >= 0!", "danger")
+        return redirect(url_for("sanpham_add"))
+
+    if not mota or mota.strip() == "":
+        flash("Mô tả không được để trống!", "danger")
+        return redirect(url_for("sanpham_add"))
+
+    if not anh or anh.strip() == "":
+        flash("Ảnh không được để trống!", "danger")
+        return redirect(url_for("sanpham_add"))
+
+    # ❌ Trùng mã
     cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
     if cur.fetchone():
+        flash(f"Mã sản phẩm {ma} đã tồn tại!", "danger")
         cur.close()
         conn.close()
-        if from_api:
-            return jsonify({"error": f"Mã sản phẩm {ma} đã tồn tại!"}), 400
-        else:
-            flash(f"Mã sản phẩm {ma} đã tồn tại!", "danger")
-            return redirect(url_for("sanpham_add"))
+        return redirect(url_for("sanpham_add"))
 
-    # INSERT
+    # ✅ INSERT
     cur.execute("""
         INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai, ThoiGianCapNhat)
         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
-    """, ma, ten, dongia, giacu, mota, anh, maloai)
+    """, ma, ten, dongia, 0, mota, anh, maloai)
     conn.commit()
 
     cur.close()
     conn.close()
 
-    # Trả về tùy request
-    if from_api:
-        return jsonify({"msg": "Thêm sản phẩm mới thành công!"})
-    else:
-        flash("Thêm sản phẩm thành công", "success")
-        return redirect(url_for("sanpham_list"))
-    
-
+    # ✅ THÀNH CÔNG → DANH SÁCH
+    flash("Thêm sản phẩm thành công!", "success")
+    return redirect(url_for("sanpham_list"))
 
 
 #=============Sửa sản phẩm================
@@ -800,7 +858,42 @@ def taikhoan_delete(ma):
     return redirect(url_for("taikhoan_list", deleted=1))
 
 
-    # ------------------ API TÌM KIẾM SẢN PHẨM ------------------
+#     # ------------------ API TÌM KIẾM SẢN PHẨM ------------------
+# @app.route("/api/search_sanpham", methods=["GET"])
+# def api_search_sanpham():
+#     q = request.args.get("q", "").strip().lower()
+
+#     conn = get_connection()
+#     cur = conn.cursor()
+
+#     cur.execute("""
+#         SELECT 
+#             RTRIM(s.MaSP) AS MaSP,
+#             s.TenSP_,
+#             s.Anh,
+#             s.DonGia,
+#             s.GiaCu,
+#             RTRIM(l.TenLoai) AS TenLoai
+#         FROM SANPHAM s
+#         LEFT JOIN LOAISANPHAM_ l 
+#             ON RTRIM(s.MaLoai) = RTRIM(l.MaLoai)
+#         WHERE LOWER(s.TenSP_) LIKE ?
+#            OR LOWER(l.TenLoai) LIKE ?
+#     """, (f"%{q}%", f"%{q}%"))
+
+#     rows = rows_to_dicts(cur)
+
+#     cur.close()
+#     conn.close()
+
+#     # ✅ KHÔNG TÌM THẤY → TRẢ MẢNG CÓ THÔNG BÁO Rỗng
+#     if not rows:
+#         return jsonify([]), 200
+
+
+#     # ✅ CÓ SẢN PHẨM
+#     return jsonify(rows), 200
+
 @app.route("/api/search_sanpham", methods=["GET"])
 def api_search_sanpham():
     q = request.args.get("q", "").strip().lower()
@@ -815,7 +908,8 @@ def api_search_sanpham():
             s.Anh,
             s.DonGia,
             s.GiaCu,
-            RTRIM(l.TenLoai) AS TenLoai
+            RTRIM(l.TenLoai) AS TenLoai,
+            s.ThoiGianCapNhat
         FROM SANPHAM s
         LEFT JOIN LOAISANPHAM_ l 
             ON RTRIM(s.MaLoai) = RTRIM(l.MaLoai)
@@ -825,17 +919,14 @@ def api_search_sanpham():
 
     rows = rows_to_dicts(cur)
 
+    for r in rows:
+        if r.get("ThoiGianCapNhat"):
+            r["ThoiGianCapNhat"] = r["ThoiGianCapNhat"].strftime("%d/%m/%Y %H:%M")
+
     cur.close()
     conn.close()
 
-    # ✅ KHÔNG TÌM THẤY → TRẢ MẢNG CÓ THÔNG BÁO Rỗng
-    if not rows:
-        return jsonify([]), 200
-
-
-    # ✅ CÓ SẢN PHẨM
     return jsonify(rows), 200
-
 
 
 

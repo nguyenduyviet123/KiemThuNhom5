@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="header">{{ 'Sửa' if item else 'Thêm' }} Sản phẩm</div>
+  <!-- THÔNG BÁO BẰNG FLASK FLASH -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
   <form method="post">
     <label>Mã sản phẩm</label><br>
     <input name="MaSP" value="{{ item.MaSP if item }}" {% if item %} readonly {% endif %} required><br>
 
     <label>Tên</label><br>
-    <input name="TenSP_" value="{{ item.TenSP_ if item }}" required><br>
+    <input name="TenSP_" value="{{ item.TenSP_ if item }}"><br>
 
     <label>Giá</label><br>
     <input name="DonGia" value="{{ item.DonGia if item }}"><br>

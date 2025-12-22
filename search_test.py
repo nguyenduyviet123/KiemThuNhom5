@@ -8,6 +8,11 @@ import time
 
 
 class AdminSearchTests(unittest.TestCase):
+    def start_test(self, name):
+        print("\n" + "="*60)
+        print(f"▶️ BẮT ĐẦU: {name}")
+        print("="*60)
+
 
     def setUp(self):
         self.driver = webdriver.Chrome()
@@ -56,14 +61,15 @@ class AdminSearchTests(unittest.TestCase):
     #             loai,
     #             f"Sản phẩm không thuộc loại tìm kiếm: {loai}"
     #         )
-
+ 
     def test_01(self):
+        self.start_test("Test 01 – Tìm kiếm theo loại sản phẩm")
         self.login_admin()
 
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
 
-        keyword = "bánh tráng".lower()
+        keyword = "bánh cayyy".lower()
 
         search_input = self.wait.until(
             EC.presence_of_element_located((By.ID, "searchInput"))
@@ -71,16 +77,21 @@ class AdminSearchTests(unittest.TestCase):
         search_input.clear()
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
-        
 
-        cards = self.wait.until(
-            EC.presence_of_all_elements_located((By.CLASS_NAME, "product-card"))
+        # 👉 Chờ có sản phẩm render xong
+        self.wait.until(
+            lambda d: len(d.find_elements(By.CLASS_NAME, "product-card")) > 0
         )
 
         found = False
         danh_sach_loai = []
 
-        for card in cards:
+        # ✅ FIX STALE: lấy lại card MỖI LẦN
+        cards = driver.find_elements(By.CLASS_NAME, "product-card")
+
+        for i in range(len(cards)):
+            card = driver.find_elements(By.CLASS_NAME, "product-card")[i]
+
             loai = card.find_element(By.CLASS_NAME, "category").text.lower()
             loai = loai.replace("loại:", "").strip()
             danh_sach_loai.append(loai)
@@ -91,8 +102,10 @@ class AdminSearchTests(unittest.TestCase):
         self.assertTrue(
             found,
             f"Không tìm thấy sản phẩm thuộc loại '{keyword}'. "
+           f"Các loại đang hiển thị: {', '.join(sorted(set(danh_sach_loai)))}"
         )
 
+        
 
 
 
@@ -158,6 +171,7 @@ class AdminSearchTests(unittest.TestCase):
 
 
     def test_02(self):
+        self.start_test("Test 02 – Tìm kiếm theo tên sản phẩm cụ thể")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -195,11 +209,12 @@ class AdminSearchTests(unittest.TestCase):
             f"Không tìm thấy sản phẩm '{keyword}'. "
             # f"Các sản phẩm đang hiển thị: {', '.join(danh_sach_ten)}"
         )
+        
 
+#     # # ================== TEST 3: KHÔNG TÌM THẤY SẢN PHẨM ==================
 
-
-    # # ================== TEST 3: KHÔNG TÌM THẤY SẢN PHẨM ==================
     def test_03(self):
+        self.start_test("Test 03 – Không tìm thấy sản phẩm")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -217,9 +232,12 @@ class AdminSearchTests(unittest.TestCase):
         )
 
         self.assertIn("Không tìm thấy",no_product_msg.text,"Không hiển thị thông báo khi không tìm thấy sản phẩm")
+        
 
-    # # # ================== TEST 4: NHẬP KÝ TỰ ĐẶC BIỆT ==================
+#     # # # ================== TEST 4: NHẬP KÝ TỰ ĐẶC BIỆT ==================
+  
     def test_04(self):
+        self.start_test("Test 04 – Tìm kiếm với ký tự đặc biệt")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -244,9 +262,12 @@ class AdminSearchTests(unittest.TestCase):
         self.assertEqual(len(cards),0,"Không được hiển thị sản phẩm khi nhập ký tự đặc biệt")
 
         self.assertIn("Không tìm thấy",no_product_msg.text,"Thông báo không tìm thấy sản phẩm không hiển thị")
+        
 
-    # # ================== TEST 5: TÌM KIẾM THEO TỪ KHÓA GẦN ĐÚNG ==================     
+#     # # ================== TEST 5: TÌM KIẾM THEO TỪ KHÓA GẦN ĐÚNG ================== 
+    
     def test_05(self):
+        self.start_test("Test 05 – Tìm kiếm theo từ khóa gần đúng")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -284,10 +305,13 @@ class AdminSearchTests(unittest.TestCase):
             print("⚠️ Không tìm thấy sản phẩm")
             self.assertTrue(True)
 
+        
 
 
-## ==============TÌM KIẾM CHỨA KHOẢNG TRẮNG================
+# ## ==============TÌM KIẾM CHỨA KHOẢNG TRẮNG================
+
     def test_06(self):
+        self.start_test("Test 06 – Tìm kiếm chỉ chứa khoảng trắng")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -307,10 +331,12 @@ class AdminSearchTests(unittest.TestCase):
             len(cards), 0,
             "Hệ thống không hiển thị sản phẩm khi tìm kiếm bằng khoảng trắng"
         )
+        
 
-## ====================TÌM KIẾM NHIỀU LẦN==================
+# ## ====================TÌM KIẾM NHIỀU LẦN==================
 
     def test_07(self):
+        self.start_test("Test 07 – Tìm kiếm nhiều lần liên tiếp")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
@@ -342,10 +368,12 @@ class AdminSearchTests(unittest.TestCase):
                     len(cards), 0,
                     "Hệ thống vẫn hiển thị sản phẩm khi từ khóa không tồn tại"
                 )
+       
 
-
-##====================THỜI GIAN PHẢN HỒI TÌM KIẾM==================
+# ##====================THỜI GIAN PHẢN HỒI TÌM KIẾM==================
+    
     def test_08(self):
+        self.start_test("Test 08 – Thời gian phản hồi tìm kiếm")
         self.login_admin()
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")

@@ -22,14 +22,22 @@
             <td>{{ p.TenLoai }}</td>
             <td>{{ p.time_left }}</td>
             <td>
-                <!-- Khôi phục bằng form POST -->
-                <form action="{{ url_for('sanpham_restore', ma=p.MaSP) }}" method="post" style="display:inline;">
-                    <button class="btn btn-success">Khôi phục</button>
+                <!-- Khôi phục -->
+                <form action="{{ url_for('sanpham_restore', ma=p.MaSP) }}"
+                    method="post"
+                    style="display:inline;">
+                    <button class="btn btn-success btn-sm">Khôi phục</button>
                 </form>
-                <td>
-            <form action="{{ url_for('delete_permanent', ma=p.MaSP) }}" method="post">
-            <button class="btn btn-danger" onclick="return confirm('Xóa vĩnh viễn?')">Xóa vĩnh viễn</button>
-            </form>
+
+                <!-- Xóa vĩnh viễn -->
+                <form action="{{ url_for('delete_permanent', ma=p.MaSP) }}"
+                    method="post"
+                    style="display:inline;">
+                    <button class="btn btn-danger btn-sm"
+                            onclick="return confirm('Xóa vĩnh viễn?')">
+                        Xóa vĩnh viễn
+                    </button>
+                </form>
             </td>
         </tr>
     {% endfor %}

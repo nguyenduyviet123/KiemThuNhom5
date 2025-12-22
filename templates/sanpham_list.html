@@ -4,6 +4,22 @@
 {% block content %}
 <div class="header">🍰 Quản lý Sản phẩm</div>
 
+{# ======================================================= #}
+{# == ĐOẠN CODE ĐỂ HIỂN THỊ THÔNG BÁO (FLASH MESSAGE) == #}
+{# ======================================================= #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <!-- Tìm kiếm sản phẩm -->
 <div class="search-bar" style="position:relative; text-align:center; margin:15px 0;">
   <i class="fa-solid fa-magnifying-glass"
@@ -30,6 +46,7 @@
   <div class="product-card">
     <img src="{{ p.Anh or url_for('static', filename='img/noimage.png') }}" alt="{{ p.TenSP_ }}">
     <div class="product-info">
+      <small class="product-code">Mã SP: {{ p.MaSP }}</small>
       <h4>{{ p.TenSP_ }}</h4>
       <p class="category">
         <!--Thêm loại-->
@@ -112,7 +129,10 @@ function renderProducts(products) {
   grid.innerHTML = "";
 
   if (products.length === 0) {
-    grid.innerHTML = `<p id="no-product-msg" style="padding:20px; color:#888;">Không tìm thấy sản phẩm</p>`;
+    grid.innerHTML = `
+      <p id="no-product-msg" style="padding:20px; color:#888;">
+        Không tìm thấy sản phẩm
+      </p>`;
     return;
   }
 
@@ -122,24 +142,57 @@ function renderProducts(products) {
         <img src="${p.Anh || '/static/img/noimage.png'}" alt="${p.TenSP_}">
         <div class="product-info">
           <h4>${p.TenSP_}</h4>
-          <p class="price">${Number(p.DonGia).toLocaleString('vi-VN')} đ</p>
 
-          <small class="update-time">🕓 Cập nhật: Chưa có</small>
+          <p class="category">
+            Loại: ${p.TenLoai || p.MaLoai}
+          </p>
+
+          <p class="price">
+            ${Number(p.DonGia).toLocaleString('vi-VN')} đ
+          </p>
+
+          <small class="update-time">
+            🕓 Cập nhật: ${p.ThoiGianCapNhat || 'Chưa có'}
+          </small>
 
           <div class="actions">
             <a href="/sanpham/edit/${p.MaSP}">
               <button class="icon-btn edit"><i>✏️</i></button>
             </a>
+
             <form method="post" action="/sanpham/delete/${p.MaSP}" style="display:inline;">
-              <button class="icon-btn delete" onclick="return confirm('Xóa sản phẩm này?')">🗑️</button>
+              <button class="icon-btn delete"
+                onclick="return confirm('Xóa sản phẩm này?')">🗑️</button>
             </form>
-            <a href="/sanpham/view/${p.MaSP}" class="icon-btn detail">🔍</a>
+
+            <a href="/sanpham/view/${p.MaSP}" class="icon-btn detail" title="Xem chi tiết">
+              🔍
+              <div class="preview-box">
+                <img src="${p.Anh || '/static/img/noimage.png'}">
+                <h4>${p.TenSP_}</h4>
+                <p><b>Mã:</b> ${p.MaSP}</p>
+                <p><b>Loại:</b> ${p.TenLoai || p.MaLoai}</p>
+                <p>
+                  <b>Giá:</b>
+                  <span class="price-new">
+                    ${Number(p.DonGia).toLocaleString('vi-VN')}đ
+                  </span>
+                  ${p.GiaCu ? `<span class="price-old">
+                    ${Number(p.GiaCu).toLocaleString('vi-VN')}đ
+                  </span>` : ""}
+                </p>
+                <p class="desc">
+                  <b>Mô tả:</b> ${p.MoTa || 'Chưa có mô tả'}
+                </p>
+              </div>
+            </a>
           </div>
         </div>
       </div>
     `;
   });
 }
+
 
 
 // ✅ Tìm kiếm sản phẩm
