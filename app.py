@@ -366,39 +366,65 @@ def sanpham_add():
     cur.execute("SELECT MaLoai, TenLoai FROM LOAISANPHAM_")
     loai = rows_to_dicts(cur)
 
+    # ❗ THÊM DUY NHẤT: xác định request có phải API không
+    data_json = request.get_json(silent=True)
+    is_api = data_json is not None
+
     if request.method == "GET":
         cur.close()
         conn.close()
         return render_template("sanpham_form.html", item=None, loai=loai)
 
-    # POST
-    ma = request.form.get("MaSP") or str(uuid4())[:8]
-    ten = request.form.get("TenSP_")
-    dongia = request.form.get("DonGia") or 0
-    mota = request.form.get("MoTa")
-    anh = request.form.get("Anh")
-    maloai = request.form.get("MaLoai")
+    # =============================================
+    # POST — NẾU LÀ API thì lấy từ JSON, nếu không thì giữ nguyên FORM
+    # =============================================
+    if is_api:
+        ma = data_json.get("MaSP") or str(uuid4())[:8]
+        ten = data_json.get("TenSP")
+        dongia = data_json.get("DonGia") or 0
+        giacu = data_json.get("GiaCu") or 0
+        mota = data_json.get("MoTa")
+        anh = data_json.get("Anh")
+        maloai = data_json.get("MaLoai")
+    else:
+        ma = request.form.get("MaSP") or str(uuid4())[:8]
+        ten = request.form.get("TenSP_")
+        dongia = request.form.get("DonGia") or 0
+        giacu = request.form.get("GiaCu") or 0
+        mota = request.form.get("MoTa")
+        anh = request.form.get("Anh")
+        maloai = request.form.get("MaLoai")
 
     # ❌ VALIDATE
     if not ten or ten.strip() == "":
+        if is_api:
+            return jsonify({"error": "Tên sản phẩm không được để trống!"}), 400
         flash("Tên sản phẩm không được để trống!", "danger")
         return redirect(url_for("sanpham_add"))
 
     if int(dongia) < 0:
+        if is_api:
+            return jsonify({"error": "Đơn giá phải >= 0!"}), 400
         flash("Đơn giá phải >= 0!", "danger")
         return redirect(url_for("sanpham_add"))
 
     if not mota or mota.strip() == "":
+        if is_api:
+            return jsonify({"error": "Mô tả không được để trống!"}), 400
         flash("Mô tả không được để trống!", "danger")
         return redirect(url_for("sanpham_add"))
 
     if not anh or anh.strip() == "":
+        if is_api:
+            return jsonify({"error": "Ảnh không được để trống!"}), 400
         flash("Ảnh không được để trống!", "danger")
         return redirect(url_for("sanpham_add"))
 
     # ❌ Trùng mã
     cur.execute("SELECT MaSP FROM SANPHAM WHERE MaSP = ?", ma)
     if cur.fetchone():
+        if is_api:
+            return jsonify({"error": f"Mã sản phẩm {ma} đã tồn tại!"}), 400
         flash(f"Mã sản phẩm {ma} đã tồn tại!", "danger")
         cur.close()
         conn.close()
@@ -408,13 +434,19 @@ def sanpham_add():
     cur.execute("""
         INSERT INTO SANPHAM (MaSP, TenSP_, DonGia, GiaCu, MoTa, Anh, MaLoai, ThoiGianCapNhat)
         VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE())
-    """, ma, ten, dongia, 0, mota, anh, maloai)
+    """, ma, ten, dongia, giacu, mota, anh, maloai)
     conn.commit()
-
     cur.close()
     conn.close()
 
-    # ✅ THÀNH CÔNG → DANH SÁCH
+    # Trả về tùy vào request là API hay Form
+    if is_api:
+        return jsonify({
+            "message": "Thêm sản phẩm thành công!",
+            "MaSP": ma
+        }), 200
+
+    # Thành công -> danh sách
     flash("Thêm sản phẩm thành công!", "success")
     return redirect(url_for("sanpham_list"))
 

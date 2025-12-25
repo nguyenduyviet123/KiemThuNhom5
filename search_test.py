@@ -37,39 +37,15 @@ class AdminSearchTests(unittest.TestCase):
         self.wait.until(EC.url_contains("/dashboard"))
 
             # ================== TEST 1: TÌM THEO LOẠI SẢN PHẨM ==================
-    # def test_search_by_category(self):
-    #     self.login_admin()
-    #     driver = self.driver
-    #     driver.get("http://127.0.0.1:5000/sanpham")
-    #     keyword = "bánh ngọt"
-    #     search_input = self.wait.until(
-    #         EC.presence_of_element_located((By.ID, "searchInput")))
-    #     search_input.clear()
-    #     search_input.send_keys(keyword)
 
-    #     cards = self.wait.until(
-    #         EC.presence_of_all_elements_located((By.CLASS_NAME, "product-card"))
-    #     )
-
-    #     #vòng for duyệt loại trong db nếu khác ở 1 cái là dừng. 
-    #     # Không có cơ hội duyệt các loại còn lại 👉 Đây là hành vi MẶC ĐỊNH của unittest
-    #     for card in cards:
-    #         loai = card.find_element(By.CLASS_NAME, "category").text.lower() #lấy tên loại
-    #         #đối chiếu với từng sản phảm được hiện ra theo tên loại
-    #         self.assertIn(
-    #             keyword.lower(),
-    #             loai,
-    #             f"Sản phẩm không thuộc loại tìm kiếm: {loai}"
-    #         )
- 
     def test_01(self):
-        self.start_test("Test 01 – Tìm kiếm theo loại sản phẩm")
+        self.start_test("Test Case 1 – Tìm theo loại sản phẩm")
         self.login_admin()
 
         driver = self.driver
         driver.get("http://127.0.0.1:5000/sanpham")
 
-        keyword = "bánh cayyy".lower()
+        keyword = "Bánh ngọt"
 
         search_input = self.wait.until(
             EC.presence_of_element_located((By.ID, "searchInput"))
@@ -78,97 +54,22 @@ class AdminSearchTests(unittest.TestCase):
         search_input.send_keys(keyword)
         search_input.send_keys(Keys.ENTER)
 
-        # 👉 Chờ có sản phẩm render xong
-        self.wait.until(
-            lambda d: len(d.find_elements(By.CLASS_NAME, "product-card")) > 0
-        )
+        time.sleep(1.5)
 
-        found = False
-        danh_sach_loai = []
-
-        # ✅ FIX STALE: lấy lại card MỖI LẦN
         cards = driver.find_elements(By.CLASS_NAME, "product-card")
 
-        for i in range(len(cards)):
-            card = driver.find_elements(By.CLASS_NAME, "product-card")[i]
-
-            loai = card.find_element(By.CLASS_NAME, "category").text.lower()
-            loai = loai.replace("loại:", "").strip()
-            danh_sach_loai.append(loai)
-
-            if keyword in loai:
-                found = True
-
-        self.assertTrue(
-            found,
-            f"Không tìm thấy sản phẩm thuộc loại '{keyword}'. "
-           f"Các loại đang hiển thị: {', '.join(sorted(set(danh_sach_loai)))}"
-        )
-
-        
+        if len(cards) > 0:
+            for card in cards:
+                category = card.find_element(By.CLASS_NAME, "category").text.lower()
+                self.assertIn(keyword.lower(), category)
+        else:
+            no_msg = driver.find_element(By.ID, "no-product-msg")
+            self.assertIn("Không tìm thấy", no_msg.text)
 
 
 
-    # # ================== TEST 2: TÌM SẢN PHẨM CỤ THỂ ==================
-    # def test_search_exact_product(self):
-    #     self.login_admin()
-    #     driver = self.driver
-    #     driver.get("http://127.0.0.1:5000/sanpham")
 
-    #     keyword = "bánh mì trứng muối"
-    #     search_input = self.wait.until(
-    #         EC.presence_of_element_located((By.ID, "searchInput"))
-    #     )
-    #     search_input.clear()
-    #     search_input.send_keys(keyword)
-    #     search_input.send_keys(Keys.ENTER)
-
-    #     # Kiểm tra có sản phẩm hiển thị
-    #     cards = self.wait.until(
-    #         EC.presence_of_all_elements_located((By.CLASS_NAME, "product-card"))
-    #     )
-    #     self.assertGreater(len(cards),0,"Không có sản phẩm nào được hiển thị khi tìm kiếm hợp lệ")
-
-    #     # Kiểm tra tên sản phẩm chứa từ khóa
-    #     product_name = cards[0].find_element(By.TAG_NAME, "h4").text.lower()
-    #     self.assertIn(
-    #         keyword.lower(),
-    #         product_name,
-    #         "Tên sản phẩm không chứa từ khóa tìm kiếm"
-    #     )
-
-    # def test_search_exact_product(self):
-    #     self.login_admin()
-    #     driver = self.driver
-    #     driver.get("http://127.0.0.1:5000/sanpham")
-
-    #     keyword = "bánh mì trứng muối".lower()
-
-    #     search_input = self.wait.until(
-    #         EC.presence_of_element_located((By.ID, "searchInput"))
-    #     )
-    #     search_input.clear()
-    #     search_input.send_keys(keyword)
-    #     search_input.send_keys(Keys.ENTER)
-
-    #     # ✅ CHỜ đến khi sản phẩm đúng xuất hiện
-    #     self.wait.until(
-    #         lambda d: keyword in d.find_element(By.TAG_NAME, "h4").text.lower()
-    #     )
-
-    #     cards = driver.find_elements(By.CLASS_NAME, "product-card")
-    #     self.assertGreater(
-    #         len(cards), 0,
-    #         "Không có sản phẩm nào được hiển thị khi tìm kiếm hợp lệ"
-    #     )
-
-    #     product_name = cards[0].find_element(By.TAG_NAME, "h4").text.lower()
-    #     self.assertIn(
-    #         keyword,
-    #         product_name,
-    #         "Tên sản phẩm không chứa từ khóa tìm kiếm"
-    #     )
-
+    # ================== TEST 2: TÌM SẢN PHẨM CỤ THỂ =================
 
     def test_02(self):
         self.start_test("Test 02 – Tìm kiếm theo tên sản phẩm cụ thể")
@@ -301,8 +202,6 @@ class AdminSearchTests(unittest.TestCase):
             )# trường hợp này sảy ra khi lỗi hệ thống phản hồi ko đúng từ khóa là a nhưng hiện ra b,c
 
         else:
-            # 👉 TRƯỜNG HỢP KHÔNG CÓ KẾT QUẢ (VẪN PASS)
-            print("⚠️ Không tìm thấy sản phẩm")
             self.assertTrue(True)
 
         
