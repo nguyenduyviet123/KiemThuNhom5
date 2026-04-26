@@ -74,15 +74,23 @@ python db.py
 ---
 Các Chức Năng Chính
 Chức năng	Mô tả
-🔐 Đăng nhập	Xác thực người dùng quản trị
-📦 Xem sản phẩm	Hiển thị danh sách toàn bộ sản phẩm
-➕ Thêm sản phẩm	Thêm sản phẩm mới (mã, tên, giá, mô tả, hình ảnh)
-✏️ Sửa sản phẩm	Chỉnh sửa thông tin sản phẩm hiện có
-🗑️ Xóa mềm	Chuyển sản phẩm vào thùng rác
-♻️ Khôi phục	Khôi phục sản phẩm từ thùng rác
-❌ Xóa vĩnh viễn	Xóa hoàn toàn khỏi hệ thống
-🔍 Tìm kiếm	Tìm kiếm theo tên, loại sản phẩm (AJAX)
-🗂️ Thùng rác	Quản lý sản phẩm đã xóa mềm
+  + Đăng nhập	Xác thực người dùng quản trị
+  
+  + Xem sản phẩm	Hiển thị danh sách toàn bộ sản phẩm
+  
+  + Thêm sản phẩm	Thêm sản phẩm mới (mã, tên, giá, mô tả, hình ảnh)
+  
+  + Sửa sản phẩm	Chỉnh sửa thông tin sản phẩm hiện có
+  
+  + Xóa mềm	Chuyển sản phẩm vào thùng rác
+  
+  + Khôi phục	Khôi phục sản phẩm từ thùng rác
+  
+  + Xóa vĩnh viễn	Xóa hoàn toàn khỏi hệ thống
+  
+  + Tìm kiếm	Tìm kiếm theo tên, loại sản phẩm (AJAX)
+  
+  + Thùng rác	Quản lý sản phẩm đã xóa mềm
 ---
 Kiểm Thử Tự Động
 Dự án sử dụng Selenium WebDriver + unittest để kiểm thử giao diện web tự động (end-to-end testing).
